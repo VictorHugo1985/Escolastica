@@ -1,6 +1,6 @@
 B# Feature Specification: Enrollment Movements
 
-**Feature Branch**: `007-enrollment-movements`  
+**Feature Branch**: `007-inscripciones`  
 **Created**: 2026-03-10  
 **Status**: Draft  
 **Input**: User description: "Enrollment Movements (Management of student enrollments and withdrawals with strict history)"
@@ -51,6 +51,16 @@ Como **administrador**, quiero consultar el historial completo de movimientos (a
 
 ---
 
+### User Story 4 - Registro de aprobacion de clase y conclusion de materia (Priority: P1)
+
+Como **escolastico**, quiero  incluir en la inscripcion del alumno un campo que indique si aprobo o no la clase y otro campo que indique si aprobo se la materia concluyo.
+
+
+**Acceptance Scenarios**:
+
+1. **Given** la configuración global de evaluación, **When** el administrador define la escala (ej. 0-100) y el mínimo (ej. 70), **Then** el sistema aplica estas validaciones en el registro de notas de todos los instructores.
+
+
 ### Edge Cases
 
 - **Re-inscripción tras Baja**: Si un alumno que se dio de baja desea volver a inscribirse en la misma materia dentro del mismo periodo académico, el sistema reactivará el registro anterior cambiando su estado de "Baja" a "Activo".
@@ -62,17 +72,18 @@ Como **administrador**, quiero consultar el historial completo de movimientos (a
 ### Functional Requirements
 
 - **FR-001**: El sistema MUST permitir el registro de "Altas" de alumnos en materias.
-- **FR-002**: El sistema MUST permitir el registro de "Bajas" de alumnos en materias, manteniendo el registro histórico (Soft Delete).
+- **FR-002**: El sistema MUST permitir el registro de "Bajas" de alumnos en materias, manteniendo el registro histórico.
 - **FR-003**: El sistema MUST requerir una fecha de movimiento para cada alta y baja.
 - **FR-004**: El sistema MUST impedir que un alumno sea dado de baja si ya tiene el estado de "Finalizado" o "Aprobado".
-- **FR-005**: El sistema MUST proveer una lista predefinida de motivos para el registro de bajas.
-- **FR-006**: El sistema MUST asegurar que las bajas se reflejen inmediatamente en el Kardex del alumno y en las listas de asistencia del instructor.
+- **FR-005**: El sistema MUST proveer una lista predefinida de motivos para el registro de bajas (Enum `motivo_gral`: 'Ausencia', 'Licencia', 'Sin reportar').
+- **FR-006**: El sistema MUST asegurar que las bajas se reflejen inmediatamente en las listas de asistencia del instructor, ocultando al alumno para futuras sesiones.
 - **FR-007**: El sistema MUST permitir filtrar movimientos por rango de fechas, materia o alumno.
+- **FR-008**: Al registrar una baja, el sistema MUST preservar todas las asistencias y notas previas para fines de auditoría e historial.
+- **FR-009**: Cada movimiento de inscripción MUST generar automáticamente un registro en la tabla `logs_auditoria`.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Movimiento**: Tipo (Alta/Baja), Fecha, Motivo (solo para baja), Usuario que registra.
-- **Inscripción**: La entidad principal que cambia de estado (Activo -> Baja).
+- **Inscripción**: Vínculo entre alumno y clase. Atributos: ID Usuario, ID Clase, Fecha Inscripción, Fecha Baja, Motivo Baja, Estado (Activo, Baja, Finalizado).
 
 ## Success Criteria *(mandatory)*
 

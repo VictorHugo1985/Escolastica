@@ -1,30 +1,30 @@
 # Feature Specification: Instructor Dashboard
 
 **Feature Branch**: `008-instructor-dashboard`  
-**Created**: 2026-03-10  
+**Created**: 2026-04-06  
 **Status**: Draft  
 **Input**: User description: "Instructor Dashboard (Centralized view for teachers with calendars and management tools)"
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Assigned Subjects List (Priority: P1)
+### User Story 1 - Calendario Instructor (Priority: P1)
 
-Como **instructor**, quiero ver una lista clara de todas las materias que tengo asignadas en el periodo actual desde mi dashboard, para acceder rápidamente a la gestión de cada clase.
+Como **instructorstico**, quiero visualizar un calendario de mis clases semanales en mi dispositivo móvil o escritorio, para organizar mi tiempo y acceder directamente a la gestión de la clase del día.
 
-**Why this priority**: Es la puerta de entrada para todas las operaciones diarias del instructor (asistencia, notas).
+**Why this priority**: La Constitución menciona explícitamente "calendarios de instructores" como una herramienta de mejora operativa. Permite centralizar la navegación diaria.
 
-**Independent Test**: Iniciar sesión como instructor y verificar que la pantalla principal muestre las materias en las que figura como docente responsable (según spec 004).
+**Independent Test**: Abrir la vista de calendario y verificar que al hacer clic en un bloque de clase, se muestren opciones rápidas para "Pasar Asistencia" o "Registrar Notas".
 
 **Acceptance Scenarios**:
 
-1. **Given** un instructor con 3 materias asignadas, **When** accede a su dashboard, **Then** el sistema muestra 3 tarjetas o elementos de lista con el nombre, horario y número de alumnos de cada materia.
-2. **Given** un instructor sin materias asignadas aún, **When** accede a su dashboard, **Then** el sistema muestra un mensaje informativo indicando que no tiene clases asignadas para el periodo actual.
+1. **Given** la vista de calendario, **When** el instructor selecciona un bloque de clase, **Then** el sistema muestra un menú emergente o modal con accesos directos a las funciones operativas de esa materia específica.
+2. **Given** un dispositivo móvil, **When** el instructor consulta su calendario, **Then** el diseño debe ser responsive y permitir disparar acciones con un solo toque sobre el evento.
 
 ---
 
-### User Story 2 - Operational Calendar (Priority: P1)
+### User Story 1 - Calendario Escolastico (Priority: P1)
 
-Como **instructor**, quiero visualizar un calendario de mis clases semanales en mi dispositivo móvil o escritorio, para organizar mi tiempo y acceder directamente a la gestión de la clase del día.
+Como **escolastico**, quiero visualizar una vista semanal o mensual de todas las  clases desde la vista escritorio, para organizar el apoyo logistico del escolastico.
 
 **Why this priority**: La Constitución menciona explícitamente "calendarios de instructores" como una herramienta de mejora operativa. Permite centralizar la navegación diaria.
 

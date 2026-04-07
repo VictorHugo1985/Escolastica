@@ -7,33 +7,18 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Recording Exam Grades (Priority: P1)
+### User Story 1 - Registro de notas por Clase (Priority: P1)
 
-Como **instructor**, quiero registrar las notas de los exámenes de mis alumnos de forma ágil desde la web (móvil o escritorio), para mantener actualizado el progreso académico de la clase.
+Como **instructor o escolastico**, quiero registrar las notas finales de las clases de mis alumnos de forma ágil desde la web (móvil o escritorio), para mantener actualizado el progreso académico.
 
 **Why this priority**: Es la función operativa crítica para la evaluación. Sin registro de notas, no se puede generar el Kardex ni certificar el aprovechamiento de las materias.
 
-**Independent Test**: Acceder a la sección de notas de una materia, ingresar calificaciones para varios alumnos y guardar. Verificar que las notas se reflejen en la base de datos vinculadas a la inscripción del alumno.
+**Independent Test**: Acceder a la sección de notas de una clase, ingresar calificaciones para varios alumnos y guardar. Verificar que las notas se reflejen en la base de datos vinculadas a la inscripción del alumno.
 
 **Acceptance Scenarios**:
 
-1. **Given** un instructor en su panel de materia, **When** selecciona la opción de "Registrar Notas", **Then** el sistema muestra la lista de alumnos inscritos con un campo de entrada numérico para la calificación.
+1. **Given** un instructor en su panel de clase, **When** selecciona la opción de inscritos **Then** el sistema muestra todos los inscritos y para cada uno hay que ingresar y registar su nota final.
 2. **Given** una nota ingresada, **When** el instructor intenta guardar, **Then** el sistema obtiene la lista de calificaciones posibles, ej.: EB, BO, EX, ME, ETC (Esta lista de calificaciones tiene que ser parametrizable y tener codigo y descripcion, aplica para todas las materias).
-
----
-
-### User Story 2 - Student Kardex View (Priority: P1)
-
-Como **miembro (alumno)**, quiero consultar mi Kardex académico histórico y vigente, para ver mis notas finales, asistencias y materias aprobadas a lo largo de mi trayectoria en la escuela.
-
-**Why this priority**: Es el principal valor para el alumno. Provee una visión consolidada de su formación.
-
-**Independent Test**: Iniciar sesión como alumno y abrir la vista de Kardex. Verificar que se listen todas las materias en las que ha estado inscrito, con su estado final (Aprobada, Reprobada, Cursando, Baja).
-
-**Acceptance Scenarios**:
-
-1. **Given** un alumno con historial en varias materias, **When** abre su Kardex, **Then** el sistema presenta una tabla cronológica con Materia, Periodo, Nota Final, % Asistencia y Estado.
-2. **Given** una materia en curso, **When** el alumno consulta su Kardex, **Then** el sistema muestra la materia con estado "En Curso" y la nota parcial si estuviera disponible.
 
 ---
 

@@ -1,12 +1,15 @@
 <!--
 Sync Impact Report:
-- Version change: 1.1.0 → 1.1.1
-- List of modified principles: None (minor text cleanup)
-- Added sections: Sync Impact Report
+- Version change: 1.1.1 → 1.2.0
+- List of modified principles:
+  - Alcance controlado para el MVP: Expanded to include Audit, Infrastructure (Classrooms), and detailed Profile validation.
+  - Arquitectura basada en datos: Clarified session-based tracking as core.
+- Added sections: None
 - Removed sections: None
 - Templates requiring updates:
-  - ✅ updated: .specify/templates/plan-template.md (Injected concrete constitution gates)
-  - ✅ updated: .specify/templates/tasks-template.md (Added Clean Code & Modularity checkpoints)
+  - ✅ updated: .specify/templates/plan-template.md (Added Audit and Session gates)
+  - ✅ updated: .specify/templates/spec-template.md (Refined Data Model alignment)
+  - ✅ updated: .specify/templates/tasks-template.md (Added Audit tasks to Foundation)
 - Follow-up TODOs: None
 -->
 
@@ -20,7 +23,7 @@ Todo el desarrollo deberá cumplir estrictamente los principios de Clean Code, p
 ## Principios Fundamentales
 
 ### Arquitectura basada en datos — NO NEGOCIABLE
-El diseño de la base de datos relacional constituye el contrato estructural del sistema y la fuente única de verdad. Ningún desarrollo de backend o frontend podrá iniciarse sin que el modelo de datos esté definido y aprobado. El esquema base delimita el alcance funcional del sistema y previene el desbordamiento del proyecto. Una vez ratificado el esquema inicial del MVP, no podrá modificarse para incorporar nuevas funcionalidades; la evolución principalmente deberá realizarse mediante extensiones compatibles que no alteren la estructura existente, no obstante tambien si fuera necesario de acuerdo a las especificaciones permitir cambiar en lo menor posible y bajo ratificacion el modelo de datos ya existente.
+El diseño de la base de datos relacional constituye el contrato estructural del sistema y la fuente única de verdad. Ningún desarrollo de backend o frontend podrá iniciarse sin que el modelo de datos esté definido y aprobado. El esquema base delimita el alcance funcional del sistema y previene el desbordamiento del proyecto. El sistema utiliza un modelo basado en **sesiones académicas** para el seguimiento preciso de asistencia y avance de temas. La evolución del sistema deberá realizarse mediante extensiones compatibles que no alteren la estructura existente, siguiendo el Diccionario de Datos Maestro (Spec 003).
 
 ### Mobile-First — Diseño operacional
 El sistema será desarrollado bajo un enfoque mobile-first para el registro de asistencias, priorizando rapidez, claridad y mínima fricción para instructores desde dispositivos móviles. No obstante, todas las funcionalidades críticas deberán ser accesibles también desde entorno web de escritorio. Los instructores dispondrán de una vista que liste sus materias asignadas y permita gestionar asistencias y notas tanto desde móvil como desde web.
@@ -30,14 +33,18 @@ Todo el código deberá cumplir estrictamente principios de Clean Code: nombres 
 
 ### Alcance controlado para el MVP
 El alcance del MVP queda estrictamente delimitado a:
-Gestión de usuarios con roles jerárquicos (administrador, instructor y miembro; bajo la premisa de que todo administrador e instructor posee inherentemente el perfil de miembro).
-Autenticación mediante correo electrónico.
-Registro de materias con instructor, horario y miembros asignados.
-Registro y consulta de asistencias.
-Registro de notas de exámenes.
-Gestión de altas y bajas de miembros por materia, con historico de por alumno y materia especialmente de las bajas.
-Vista del Kardex por alumno vigentes e historicas.
-Vista para instructores con listado, calendarios y gestión de sus materias.
+- Gestión de usuarios con roles jerárquicos y perfiles detallados (validación de CI/Email obligatoria).
+- Autenticación segura mediante correo electrónico.
+- Gestión de infraestructura física (aulas y capacidad).
+- Registro de materias y temas por materia (Pensum).
+- Gestión de sesiones académicas (clase, examen, práctica, reposición).
+- Registro y consulta de asistencias vinculadas a sesiones.
+- Registro de notas final de clases.
+- Seguimiento académico de temas avanzados por sesión.
+- Gestión de movimientos de alumnos (altas y bajas con histórico y motivos).
+- Sistema de auditoría automática para acciones críticas.
+- Vista del Kardex por alumno.
+- Vista para instructores con gestión de sus sesiones.
 Cualquier funcionalidad fuera de este alcance requerirá evaluación formal y justificación basada en impacto organizacional real.
 
 ### Lineamientos organizacionales
@@ -69,4 +76,4 @@ Plan de migración si aplica.
 Aprobación explícita.
 La complejidad debe justificarse; la simplicidad es el estándar por defecto.
 
-Version: 1.1.1 | Ratified: 2026-03-03 | Last Amended: 2026-03-06
+Version: 1.2.0 | Ratified: 2026-03-03 | Last Amended: 2026-04-06

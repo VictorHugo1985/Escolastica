@@ -1,30 +1,30 @@
 # Feature Specification: Subject Management
 
-**Feature Branch**: `004-subject-management`  
+**Feature Branch**: `004-gestion-materias`  
 **Created**: 2026-03-10  
 **Status**: Draft  
 **Input**: User description: "Subject Management (Management of subjects, schedules, and link between Instructors and Members)"
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Create and Manage Subjects (Priority: P1)
+### User Story 1 - Crear y Gestionar Materias (Priority: P1)
 
 Como **administrador de la Secretaría de Escolástica**, quiero registrar y configurar nuevas materias (nombre, descripción, periodo académico) para organizar los cursos de la escuela.
 
 **Why this priority**: Es el punto de partida para cualquier actividad académica. Sin materias registradas, no se pueden asignar instructores ni inscribir alumnos.
 
-**Independent Test**: Verificar que un administrador pueda crear una materia, editar sus datos básicos y que estos persistan correctamente en la base de datos.
+**Independent Test**: Verificar que un escolastico pueda crear una materia, editar sus datos básicos y que estos persistan correctamente en la base de datos.
 
 **Acceptance Scenarios**:
 
-1. **Given** un administrador autenticado, **When** completa el formulario de nueva materia con datos válidos, **Then** el sistema crea la materia y la muestra en el listado general.
-2. **Given** una materia existente, **When** el administrador modifica su descripción, **Then** el sistema actualiza el registro y muestra la nueva información.
+1. **Given** un escolastico autenticado, **When** completa el formulario de nueva materia con datos válidos, **Then** el sistema crea la materia y la muestra en el listado general.
+2. **Given** una materia existente, **When** el escolastico modifica su descripción, **Then** el sistema actualiza el registro y muestra la nueva información.
 
 ---
 
-### User Story 2 - Assign Instructor to Subject (Priority: P1)
+### User Story 2 - Asigar instructor a la materia (Priority: P1)
 
-Como **administrador**, quiero asignar a uno o más instructores responsables a una materia, para que ellos puedan gestionar las asistencias y notas de sus alumnos.
+Como **escolastico**, quiero asignar a uno o más instructores responsables a una materia, para que ellos puedan gestionar las asistencias y notas de sus alumnos.
 
 **Why this priority**: Define la responsabilidad docente y habilita el acceso de los instructores a sus clases en sus dashboards personales.
 
@@ -37,9 +37,9 @@ Como **administrador**, quiero asignar a uno o más instructores responsables a 
 
 ---
 
-### User Story 3 - Schedule Management (Priority: P2)
+### User Story 3 - Gestion de Horarios Management (Priority: P2)
 
-Como **administrador**, quiero definir los días y horarios en los que se imparte una materia, para que los instructores y alumnos tengan claridad sobre su calendario.
+Como **escolastico**, quiero definir los días y horarios en los que se imparte una materia, para que los instructores y alumnos tengan claridad sobre su calendario.
 
 **Why this priority**: Permite la organización del tiempo y evita solapamientos de clases en el calendario institucional.
 
@@ -47,14 +47,14 @@ Como **administrador**, quiero definir los días y horarios en los que se impart
 
 **Acceptance Scenarios**:
 
-1. **Given** una materia, **When** el administrador agrega un bloque horario (ej. Lunes de 19:00 a 21:00), **Then** el sistema guarda el horario y lo asocia a la materia.
+1. **Given** una materia, **When** el escolastico agrega un bloque horario (ej. Lunes de 19:00 a 21:00), **Then** el sistema guarda el horario y lo asocia a la materia.
 2. **Given** un horario asignado, When se intenta solapar con otro horario en la misma "aula" o para el mismo instructor (si aplica la restricción), Then el sistema advierte sobre el conflicto pero permite guardar el registro para mantener flexibilidad operativa.
 
 ---
 
 ### User Story 4 - Member Enrollment (Priority: P1)
 
-Como **administrador o personal de Escolástica**, quiero inscribir a miembros en una materia específica para que puedan asistir a clase y ser evaluados.
+Como **Escolástica**, quiero inscribir a miembros en una materia específica para que puedan asistir a clase y ser evaluados.
 
 **Why this priority**: Es fundamental para el control de asistencia y el registro de notas. Sin inscripciones, la operatividad diaria de la clase no es posible.
 
@@ -62,14 +62,13 @@ Como **administrador o personal de Escolástica**, quiero inscribir a miembros e
 
 **Acceptance Scenarios**:
 
-1. **Given** una materia activa, **When** el administrador busca a un miembro por nombre o correo y lo añade, **Then** el sistema crea la inscripción con estado "Activo".
+1. **Given** una materia activa, **When** el escolastico busca a un miembro por nombre o correo y lo añade, **Then** el sistema crea la inscripción con estado "Activo".
 2. **Given** el proceso de inscripción, **When** se busca personal para inscribir, **Then** el sistema permite seleccionar a cualquier usuario registrado (ya que todos son miembros inherentes).
 
 ---
 
 ### Edge Cases
 
-- **Materia sin Instructor**: El sistema debe permitir crear la materia y dejarla "pendiente de asignación" de instructor.
 - **Inscripción Duplicada**: El sistema debe impedir que un mismo miembro sea inscrito dos veces en la misma materia para el mismo periodo.
 - **Cambio de Instructor**: Si se cambia el instructor de una materia, los registros de asistencia y notas previos deben permanecer íntegros.
 
