@@ -1,13 +1,13 @@
 # Feature Specification: Attendance Tracking
 
-**Feature Branch**: `005-attendance-tracking`  
+**Feature Branch**: `005-registro-asistencia`  
 **Created**: 2026-03-10  
 **Status**: Draft  
 **Input**: User description: "Attendance Tracking (Mobile-first system for instructors to record attendance quickly)"
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Quick Attendance Recording (Priority: P1)
+### User Story 1 - Registro rapido de asistencia (Priority: P1)
 
 Como **instructor en el aula**, quiero registrar la asistencia de mis alumnos desde mi dispositivo móvil de forma rápida y sencilla, para no perder tiempo de clase en tareas administrativas.
 
@@ -17,15 +17,15 @@ Como **instructor en el aula**, quiero registrar la asistencia de mis alumnos de
 
 **Acceptance Scenarios**:
 
-1. **Given** un instructor en su dashboard móvil, **When** selecciona una materia con fecha actual seleccionada por defecto, **Then** el sistema muestra la lista de alumnos inscritos con opciones rápidas de marcado (ej. "Todos presentes").
+1. **Given** un instructor en su móvil, **When** abre la aplicacion y automaticamente se filtra de acuerdo al dia de la semana las materias que dicta ese dia, posteriormente selecciona una materia con fecha actual seleccionada por defecto, **Then** el sistema muestra la lista de alumnos inscritos con opciones rápidas de marcado (ej. "Todos presentes").
 2. **Given** la lista de alumnos, **When** el instructor sino marca nada esta asumido como "Ausente".
-3. **Given** un instructor abre la lista del dia, **Then** la lista previamente cargada deberia mostrarse al instructor para seguir registrando asistencias.
+3. **Given** un instructor abre la lista de asistencia del dia, **Then** si hubo carga de asistencia previa deberia mostrarse al instructor para seguir registrando nuevas asistencias o editando su asistencia.
 
 ---
 
 ### User Story 2 - Attendance History Review (Priority: P2)
 
-Como **instructor o administrador**, quiero consultar el historial de asistencias de una materia específica para realizar un seguimiento del compromiso de los alumnos.
+Como **instructor o escolastico**, quiero consultar el historial de asistencias de una materia específica para realizar un seguimiento del compromiso de los alumnos.
 
 **Why this priority**: Permite la toma de decisiones pedagógicas y administrativas basadas en datos históricos.
 

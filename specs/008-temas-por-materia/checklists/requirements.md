@@ -1,8 +1,8 @@
-# Specification Quality Checklist: System Configuration
+# Specification Quality Checklist: Subject Topics Table
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-03-10
-**Feature**: [specs/010-system-configuration/spec.md](specs/010-system-configuration/spec.md)
+**Created**: 2026-04-06
+**Feature**: [specs/012-subject-topics-table/spec.md](specs/012-subject-topics-table/spec.md)
 
 ## Content Quality
 
@@ -31,5 +31,4 @@
 
 ## Notes
 
-- Clarification resolved: Overlapping academic periods will be allowed (Option A).
-- Ready for `/speckit.plan`.
+- Spec is complete and ready for planning.

@@ -1,6 +1,6 @@
 # Feature Specification: General Specifications (Project Structure and Login)
 
-**Feature Branch**: `001-general-specifications`  
+**Feature Branch**: `001-especificaciones-no-funcionales`  
 **Created**: 2026-03-06  
 **Status**: Draft  
 **Input**: User description: "001 Especificaciones Generales"
