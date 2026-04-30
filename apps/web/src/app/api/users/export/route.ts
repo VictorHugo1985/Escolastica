@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
 
     const buffer = await workbook.xlsx.writeBuffer();
     const fecha = new Date().toISOString().split('T')[0];
-    return new Response(buffer as Buffer, {
+    return new Response(new Uint8Array(buffer as ArrayBuffer), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="usuarios-${fecha}.xlsx"`,
