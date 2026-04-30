@@ -79,7 +79,7 @@ export default function LoginPage() {
             margin="normal"
             autoComplete="email"
             error={!!errors.email}
-            helperText={errors.email?.message}
+            helperText={errors.email?.message as string}
             {...register('email')}
           />
           <TextField
@@ -89,7 +89,7 @@ export default function LoginPage() {
             margin="normal"
             autoComplete="current-password"
             error={!!errors.password}
-            helperText={errors.password?.message}
+            helperText={errors.password?.message as string}
             {...register('password')}
           />
           <FormControlLabel

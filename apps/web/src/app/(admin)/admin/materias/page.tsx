@@ -343,7 +343,7 @@ export default function MateriasPage() {
               fullWidth
               margin="dense"
               error={!!errors.nombre}
-              helperText={errors.nombre?.message}
+              helperText={errors.nombre?.message as string}
               {...register('nombre')}
             />
             <TextField
@@ -360,7 +360,7 @@ export default function MateriasPage() {
               fullWidth
               margin="dense"
               error={!!errors.nivel}
-              helperText={errors.nivel?.message}
+              helperText={errors.nivel?.message as string}
               {...register('nivel', { valueAsNumber: true })}
             />
             <FormControlLabel

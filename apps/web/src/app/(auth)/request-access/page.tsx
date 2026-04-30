@@ -85,7 +85,7 @@ export default function RequestAccessPage() {
               autoComplete="email"
               autoFocus
               error={!!errors.email}
-              helperText={errors.email?.message}
+              helperText={errors.email?.message as string}
               {...register('email')}
             />
 

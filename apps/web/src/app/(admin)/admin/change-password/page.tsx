@@ -74,7 +74,7 @@ export default function ChangePasswordPage() {
               margin="normal"
               autoComplete="current-password"
               error={!!errors.currentPassword}
-              helperText={errors.currentPassword?.message}
+              helperText={errors.currentPassword?.message as string}
               {...register('currentPassword')}
             />
             <TextField
@@ -84,7 +84,7 @@ export default function ChangePasswordPage() {
               margin="normal"
               autoComplete="new-password"
               error={!!errors.newPassword}
-              helperText={errors.newPassword?.message}
+              helperText={errors.newPassword?.message as string}
               {...register('newPassword')}
             />
             <TextField
@@ -94,7 +94,7 @@ export default function ChangePasswordPage() {
               margin="normal"
               autoComplete="new-password"
               error={!!errors.confirm}
-              helperText={errors.confirm?.message}
+              helperText={errors.confirm?.message as string}
               {...register('confirm')}
             />
             <Button

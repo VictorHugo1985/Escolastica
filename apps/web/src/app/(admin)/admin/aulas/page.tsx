@@ -160,7 +160,7 @@ export default function AulasPage() {
               fullWidth
               margin="dense"
               error={!!errors.nombre}
-              helperText={errors.nombre?.message}
+              helperText={errors.nombre?.message as string}
               {...register('nombre')}
             />
             <TextField
@@ -169,7 +169,7 @@ export default function AulasPage() {
               fullWidth
               margin="dense"
               error={!!errors.capacidad}
-              helperText={errors.capacidad?.message}
+              helperText={errors.capacidad?.message as string}
               {...register('capacidad', { valueAsNumber: true })}
             />
             <TextField

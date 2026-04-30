@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
               fullWidth
               margin="normal"
               error={!!errors.email}
-              helperText={errors.email?.message}
+              helperText={errors.email?.message as string}
               {...register('email')}
             />
             <Button

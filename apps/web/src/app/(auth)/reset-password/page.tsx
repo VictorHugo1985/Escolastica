@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
               fullWidth
               margin="normal"
               error={!!errors.password}
-              helperText={errors.password?.message}
+              helperText={errors.password?.message as string}
               {...register('password')}
             />
             <TextField
@@ -89,7 +89,7 @@ export default function ResetPasswordPage() {
               fullWidth
               margin="normal"
               error={!!errors.confirm}
-              helperText={errors.confirm?.message}
+              helperText={errors.confirm?.message as string}
               {...register('confirm')}
             />
             <Button

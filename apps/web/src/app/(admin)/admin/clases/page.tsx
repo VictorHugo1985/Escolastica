@@ -415,7 +415,7 @@ export default function ClasesPage() {
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                       error={!!(errors as any).horario?.hora_inicio}
-                      helperText={(errors as any).horario?.hora_inicio?.message}
+                      helperText={(errors as any).horario?.hora_inicio?.message as string}
                       {...register('horario.hora_inicio')}
                     />
                   </Grid>
@@ -426,7 +426,7 @@ export default function ClasesPage() {
                       fullWidth
                       InputLabelProps={{ shrink: true }}
                       error={!!(errors as any).horario?.hora_fin}
-                      helperText={(errors as any).horario?.hora_fin?.message}
+                      helperText={(errors as any).horario?.hora_fin?.message as string}
                       {...register('horario.hora_fin')}
                     />
                   </Grid>
@@ -538,7 +538,7 @@ export default function ClasesPage() {
                           {...params}
                           label="Celador responsable"
                           error={!!errors.celador}
-                          helperText={errors.celador?.message || "Seleccionar de los usuarios vigentes"}
+                          helperText={(errors.celador?.message as string) || "Seleccionar de los usuarios vigentes"}
                         />
                       )}
                     />
@@ -600,7 +600,7 @@ export default function ClasesPage() {
                   fullWidth
                   InputLabelProps={{ shrink: true }}
                   error={!!errors.fecha_fin}
-                  helperText={errors.fecha_fin?.message}
+                  helperText={errors.fecha_fin?.message as string}
                   {...register('fecha_fin')}
                 />
               </Grid>
