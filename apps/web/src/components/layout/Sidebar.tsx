@@ -41,7 +41,7 @@ interface SidebarProps {
 const navItems: NavItem[] = [
   // Administración — Escolástico
   { label: 'Usuarios',   href: '/admin/users',         icon: <PeopleIcon />,         roles: ['Escolastico'] },
-  { label: 'Pendientes', href: '/admin/users/pending', icon: <HourglassEmptyIcon />, roles: ['Escolastico'] },
+  { label: 'Probacionistas', href: '/admin/users/pending', icon: <HourglassEmptyIcon />, roles: ['Escolastico'] },
   { label: 'Materias',   href: '/admin/materias',       icon: <SchoolIcon />,         roles: ['Escolastico'] },
   { label: 'Clases',     href: '/admin/clases',         icon: <ClassIcon />,          roles: ['Escolastico'] },
   { label: 'Aulas',      href: '/admin/aulas',          icon: <MeetingRoomIcon />,    roles: ['Escolastico'] },
