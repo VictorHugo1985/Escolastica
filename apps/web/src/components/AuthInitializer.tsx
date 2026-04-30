@@ -5,8 +5,6 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/auth.store';
 import { setAccessToken } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-
 export default function AuthInitializer() {
   const { user, setSession, logout } = useAuthStore();
 
@@ -17,7 +15,7 @@ export default function AuthInitializer() {
     // Token lost after page refresh — restore via cookie
     if (!stored.accessToken) {
       axios
-        .post(`${API_URL}/auth/refresh`, {}, { withCredentials: true })
+        .post('/api/auth/refresh', {}, { withCredentials: true })
         .then(({ data }) => {
           setSession(stored.user!, data.accessToken);
         })
