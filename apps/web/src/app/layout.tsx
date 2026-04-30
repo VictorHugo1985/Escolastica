@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/react';
 import ThemeRegistry from '@/lib/ThemeRegistry';
 import AuthInitializer from '@/components/AuthInitializer';
 
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeRegistry>
           <AuthInitializer />
           {children}
+          <Analytics />
         </ThemeRegistry>
       </body>
     </html>
