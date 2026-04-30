@@ -105,15 +105,17 @@ export default function ClasesPage() {
     handleSubmit,
     reset,
     control,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<any>({
-    resolver: zodResolver(editingClase ? UpdateClaseSchema : CreateClaseSchema),
+    resolver: zodResolver(UpdateClaseSchema),
     defaultValues: {
       mes_inicio: new Date().getMonth() + 1,
       anio_inicio: new Date().getFullYear(),
       fecha_inicio: new Date().toISOString().split('T')[0],
       fecha_fin: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       celador: '',
+      horario: { dia_semana: 4, hora_inicio: '18:00', hora_fin: '20:00' },
     }
   });
 
@@ -222,12 +224,33 @@ export default function ClasesPage() {
     }
   }
 
-  async function onSubmit(data: any) {
+  async function onSubmit(_data: any) {
     try {
       if (editingClase) {
-        await api.patch(`/clases/${editingClase.id}`, data);
+        await api.patch(`/clases/${editingClase.id}`, _data);
       } else {
-        await api.post('/clases', data);
+        // getValues() devuelve todos los campos registrados sin pasar por el schema
+        const v = getValues();
+        if (!v.materia_id) { setError('Seleccioná una materia'); return; }
+        if (!v.instructor_id) { setError('Seleccioná un instructor'); return; }
+        if (!v.celador?.trim()) { setError('Ingresá el nombre del celador'); return; }
+        const payload = {
+          materia_id: v.materia_id,
+          instructor_id: v.instructor_id,
+          mes_inicio: Number(v.mes_inicio),
+          anio_inicio: Number(v.anio_inicio),
+          celador: v.celador,
+          fecha_inicio: v.fecha_inicio,
+          fecha_fin: v.fecha_fin,
+          paralelo: v.paralelo || undefined,
+          horario: {
+            dia_semana: Number(v.horario?.dia_semana ?? 4),
+            hora_inicio: v.horario?.hora_inicio ?? '18:00',
+            hora_fin: v.horario?.hora_fin ?? '20:00',
+            aula_id: v.horario?.aula_id || undefined,
+          },
+        };
+        await api.post('/clases', payload);
       }
       setDialogOpen(false);
       loadData();
