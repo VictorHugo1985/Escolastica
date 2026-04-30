@@ -4,7 +4,15 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "env": ["NEXT_PUBLIC_API_URL"]
+      "env": [
+        "NEXT_PUBLIC_API_URL",
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "JWT_SECRET",
+        "JWT_EXPIRATION",
+        "GMAIL_USER",
+        "GMAIL_PASS"
+      ]
     },
     "dev": {
       "cache": false,
