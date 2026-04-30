@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -68,7 +68,7 @@ function nextEstado(current: Estado): Estado {
   return ESTADOS[(idx + 1) % ESTADOS.length];
 }
 
-export default function PaseListaPage() {
+function PaseListaContent() {
   const { claseId } = useParams<{ claseId: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -298,5 +298,13 @@ export default function PaseListaPage() {
         </>
       )}
     </Box>
+  );
+}
+
+export default function PaseListaPage() {
+  return (
+    <Suspense>
+      <PaseListaContent />
+    </Suspense>
   );
 }
