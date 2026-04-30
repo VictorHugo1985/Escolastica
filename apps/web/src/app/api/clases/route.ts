@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
 
     const materia = await prisma.materias.findUnique({ where: { id: data.materia_id } });
     if (!materia) throw new ApiError('Materia no encontrada', 404);
+    if (!data.horario) throw new ApiError('Datos de horario requeridos', 400);
 
     const codigo = await generateCodigo(materia.nombre, data.mes_inicio, data.anio_inicio, data.paralelo);
 
