@@ -24,7 +24,7 @@ Como **desarrollador o administrador del sistema**, quiero establecer la estruct
 
 ### User Story 2 - Login de usuario con correo (Priority: P1)
 
-Como **miembro, instructor o administrador**, quiero iniciar sesión de forma segura utilizando mi correo electrónico y contraseña para acceder a mis funcionalidades correspondientes según mi rol.
+Como **instructor o escolastico**, quiero iniciar sesión de forma segura utilizando mi correo electrónico y contraseña para acceder a mis funcionalidades correspondientes según mi rol.
 
 **Why this priority**: La autenticación es el control de acceso fundamental. Ninguna funcionalidad operativa (asistencias, notas, etc.) puede ser utilizada sin identificar al usuario y validar sus permisos.
 
@@ -89,7 +89,7 @@ Como **usuario**, quiero poder recuperar el acceso a mi cuenta si olvido mi cont
 
 ### Key Entities *(include if feature involves data)*
 
-- **Usuario**: Datos de identidad (email, hash de contraseña, rol: admin/instructor/miembro).
+- **Usuario**: Datos de identidad (email, hash de contraseña, rol: escolastico/instructor).
 - **Sesión**: Datos de acceso activo (token, fecha expiración, id_usuario).
 - **TokenRecuperación**: Token de un solo uso para reset de contraseña vinculado a un usuario.
 

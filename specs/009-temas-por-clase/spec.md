@@ -7,6 +7,10 @@
 
 ## Clarifications
 
+### Session 2026-04-21
+
+- Q: ¿La tabla `sesiones` (spec 002) reemplaza completamente a `clase_temas`, o deben coexistir? → A: `sesiones` reemplaza completamente a `clase_temas`. El campo `tema_id` (FK → temas, Optional) en `sesiones` cubre el tracking académico. No se crea tabla adicional.
+
 ### Session 2026-04-06
 
 - Q: ¿Se puede registrar más de un tema por sesión/día para una misma clase? → A: Solo se permite registrar un único tema por sesión.
@@ -53,36 +57,27 @@ Como **Escolastico**, quiero consultar el avance de temas de cualquier clase abi
 
 ### Functional Requirements
 
-- **FR-001**: El sistema MUST definir una tabla `clase_temas` para el seguimiento de avance.
-- **FR-002**: Cada registro MUST vincularse a una `clase` y a un `tema` específico.
-- **FR-003**: El sistema MUST registrar automáticamente la `fecha_completado` al marcar un tema como avanzado.
-- **FR-004**: El sistema MUST permitir añadir, editar y eliminar observaciones o comentarios en cada tema avanzado.
-- **FR-005**: El sistema MUST impedir que se marquen temas de una materia distinta a la que pertenece la clase.
-- **FR-006**: El sistema MUST restringir el registro a un máximo de un (1) tema por clase por día.
-- **FR-007**: El sistema MUST permitir a los instructores editar o eliminar sus propios registros de `clase_temas` sin restricciones de tiempo.
-- **FR-008**: El sistema MUST permitir que cualquier usuario con rol de instructor o administrador registre el avance, capturando su `instructor_id` de forma independiente al titular de la clase.
+- **FR-001**: El seguimiento de avance de temas se implementa mediante la tabla `sesiones` (definida en spec 002). No existe tabla `clase_temas` independiente.
+- **FR-002**: Cada registro en `sesiones` MUST vincularse a una `clase` y opcionalmente a un `tema` (FK `tema_id` → temas).
+- **FR-003**: El sistema MUST registrar la `fecha` de la sesión al marcar un tema como avanzado.
+- **FR-004**: El sistema MUST permitir añadir, editar y eliminar `comentarios` en el registro de `sesiones`.
+- **FR-005**: El sistema MUST impedir que se asigne un `tema_id` que no pertenezca a la materia de la clase.
+- **FR-006**: El sistema MUST restringir el registro a un máximo de un (1) tema por clase por día (unicidad sobre `clase_id` + `fecha`).
+- **FR-007**: El sistema MUST permitir a los instructores editar o eliminar sus propios registros de `sesiones` sin restricciones de tiempo.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Clase_Tema**: Registro de ejecución de un tema en una instancia de clase. Atributos: ID Clase, ID Tema, Fecha, Comentarios, ID Instructor (quien registra).
+- **Sesión**: Registro de ejecución de una clase (tipo, fecha, tema avanzado, comentarios). Ver tabla `sesiones` en spec 002.
 
-## Data Dictionary *(Conceptual Model)*
+## Data Dictionary *(Referencia a Spec 002)*
 
-### 1. Seguimiento Académico
-- **Tabla: `clase_temas`**
-    - `id`: UUID (PK)
-    - `clase_id`: UUID (FK -> clases) - Definida en Spec 003.
-    - `tema_id`: UUID (FK -> temas) - Definida en Spec 012.
-    - `fecha_completado`: Date (Not Null, Default CURRENT_DATE) - Única por clase/día.
-    - `instructor_id`: UUID (FK -> usuarios) - El instructor o administrador que registró el avance.
-    - `comentarios`: Text (Opcional)
-    - `created_at`: Timestamp (Auditoría)
+El tracking de temas se gestiona mediante la tabla `sesiones` definida en spec 002. Los campos relevantes son `tema_id` (FK → temas, Optional) y `comentarios`. Ver diccionario consolidado en spec 002, sección 5.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Tabla `clase_temas` operativa y vinculada a `clases` y `temas`.
+- **SC-001**: Tabla `sesiones` operativa con campo `tema_id` (FK → temas, opcional) vinculada a `clases` y `temas`.
 - **SC-002**: Restricción de integridad que impida temas duplicados por día para la misma clase.
 - **SC-003**: Tiempo de respuesta de la consulta de avance por clase < 500ms.
 - **SC-004**: Reporte de avance académico (porcentaje) verificable mediante consultas SQL.

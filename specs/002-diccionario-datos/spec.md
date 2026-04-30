@@ -2,11 +2,32 @@
 
 **Feature Branch**: `002-diccionario-datos`  
 **Created**: 2026-03-10  
-**Updated**: 2026-04-06 (Refactorización a Sesiones)  
+**Updated**: 2026-04-23 (Sincronización con Prisma: multi-rol, enums, tablas técnicas)  
 **Status**: Draft  
 **Input**: User description: "Renombrar tabla clase_temas a sesiones y refactorizar para soportar asistencia, tipo de clase y avance de temas."
 
 ## Clarifications
+
+### Session 2026-04-21
+
+- Q: ¿Cuál es el nombre canónico del rol administrativo y la lista completa de roles? → A: 6 roles: `Escolastico` (no 'Admin'), `Instructor`, `Miembro`, `Probacionista`, `ExProbacionista` *(spec 023)*, `ExMiembro`. Corregido en tabla `roles`.
+- Q: ¿El concepto de "Periodo Académico" requiere una tabla propia o gestión formal? → A: Descartado. No existe tabla `periodos` ni gestión formal de apertura/cierre de periodos. Los filtros temporales se realizan por rango de fechas o por `anio_inicio` + `mes_inicio` de `clases`.
+
+### Session 2026-04-20
+
+- Q: ¿Qué lista de roles se debe utilizar? → A: Escolastico, Instructor, Miembro, Probacionista, ExProbacionista, ExMiembro.
+- Q: ¿Qué estados de asistencia se deben utilizar? → A: Presente, Ausente, Licencia.
+- Q: ¿Se debe incluir el campo `nivel` en la tabla `materias`? → A: Sí, incluir `nivel`: INTEGER.
+- Q: ¿Se debe incluir el campo `fecha_fin` en la tabla `clases`? → A: Sí, incluir `fecha_fin`: DATE.
+- Q: ¿Qué tipos de sesiones se deben utilizar? → A: Clase, Examen, Practica, Repaso.
+
+### Session 2026-04-18
+
+- Q: ¿Cómo se debe marcar el campo `concluyo_temario_materia`? → A: Manualmente por el instructor o administrador.
+- Q: ¿Existe dependencia entre `concluyo_temario_materia` y el registro de la nota final? → A: No, son registros independientes.
+- Q: ¿Qué fecha se debe registrar al concluir la materia? → A: Manualmente por el instructor (permite registrar eventos pasados).
+- Q: ¿Quién puede marcar la conclusión del temario? → A: Solo el instructor titular de la clase o un administrador.
+- Q: ¿El registro de conclusión es individual o grupal? → A: Es estrictamente individual por cada inscripción de alumno.
 
 ### Session 2026-04-06
 
@@ -17,7 +38,7 @@
 - Q: ¿Cómo se maneja la recurrencia de los horarios? → A: Se asume una recurrencia semanal fija (mismo horario cada semana durante la duración de la clase).
 - Q: ¿Se puede registrar más de un tema por sesión/día para una misma clase? → A: Solo se permite registrar un único tema por sesión.
 - Q: ¿Los instructores pueden editar o eliminar sus registros de avance? → A: Sí, los instructores tienen flexibilidad total para editar o eliminar sus propios registros en cualquier momento.
-- Q: ¿Quién puede registrar el avance de temas en una clase? → A: Cualquier instructor autorizado o administrador puede realizar el registro (ej: suplentes), quedando constancia de su ID en el campo `instructor_id`.
+- Q: ¿Quién puede registrar el avance de temas en una clase? → A: Cualquier instructor autorizado o escolastico puede realizar el registro (ej: suplentes), quedando constancia de su ID en el campo `instructor_id`.
 - Q: ¿Cómo se gestionan los espacios físicos (aulas)? → A: Se define una tabla maestra de `aulas` para que los horarios referencien un espacio preexistente en lugar de texto libre.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -43,7 +64,7 @@ Como **arquitecto de software o desarrollador**, quiero definir las entidades ba
 - **FR-003**: El sistema MUST definir una tabla de `Usuarios` que centralice la identidad y autenticación.
 - **FR-004**: El sistema MUST definir una tabla de `materias` (Pensum) que actúe como catálogo maestro de asignaturas y sus temarios.
 - **FR-005**: El sistema MUST definir una tabla de `clases` para las sesiones abiertas, vinculadas al Pensum, con instructor, código, paralelo y fecha de inicio.
-- **FR-006**: El sistema MUST definir una tabla de `Inscripciones` (relación N:M entre Usuarios y Clases) para gestionar alumnos.
+- **FR-006**: El sistema MUST definir una tabla de `Inscripciones` (relación N:M entre Usuarios and Clases) para gestionar alumnos.
 - **FR-007**: El sistema MUST definir una tabla de `Asistencias` vinculada a una sesión específica (`sesiones.id`).
 - **FR-008**: El sistema MUST definir una tabla de `Notas` vinculada a una Inscripción para registrar resultados de exámenes.
 - **FR-009**: El sistema MUST incluir campos de auditoría (`created_at`, `updated_at`) en todas las tablas principales.
@@ -57,14 +78,14 @@ Como **arquitecto de software o desarrollador**, quiero definir las entidades ba
 ### Key Entities *(include if feature involves data)*
 
 - **Usuario**: Identidad central. Todo usuario es **Miembro** tras la probación.
-- **Rol**: Admin, Instructor, Miembro, Probacionista, Ex-miembro.
+- **Rol**: Escolastico, Instructor, Miembro, Probacionista, ExProbacionista, ExMiembro.
 - **Materia**: Definición maestra de una asignatura (ej. "Psicología", temario base).
 - **Tema**: Unidad de contenido dentro de una materia.
-- **Clase**: Una sesión específica abierta (ej. "Psicología - Marzo 2026 - Paralelo A").
+- **Clase**: Una clase específica abierta (ej. "Psicología - Marzo 2026 - Paralelo A").
 - **Aula**: Espacio físico donde se dictan las clases.
 - **Sesión**: Registro de una clase dada (clase, examen, práctica, reposición).
 - **Horario**: Definición de día, hora y aula para una clase.
-- **Inscripción**: Vínculo entre alumno e clase.
+- **Inscripción**: Vínculo entre alumno y clase.
 - **Asistencia**: Registro de presencia en una sesión.
 - **Nota**: Calificación en una clase.
 
@@ -73,21 +94,47 @@ Como **arquitecto de software o desarrollador**, quiero definir las entidades ba
 ### 1. Usuarios & Roles
 - **Tabla: `roles`**
     - `id`: UUID (PK, DEFAULT gen_random_uuid())
-    - `nombre`: VARCHAR(50) (Unique, Not Null) - ej: 'Admin', 'Instructor', 'Miembro', 'Probacionista'.
+    - `nombre`: VARCHAR(50) (Unique, Not Null) - Enum: 'Escolastico', 'Instructor', 'Miembro', 'Probacionista', 'ExProbacionista', 'ExMiembro'. *(ExProbacionista añadido en spec 023)*
 - **Tabla: `usuarios`**
     - `id`: UUID (PK) - Sincronizado con Supabase Auth.
-    - `rol_id`: UUID (FK -> roles, Not Null)
-    - `email`: VARCHAR(255) (Unique, Not Null)
+    - ~~`rol_id`~~ — *eliminado en spec 018; reemplazado por tabla `usuario_roles`*
+    - `email`: VARCHAR(255) (Unique, **Optional**) — nullable para soportar Probacionistas sin email hasta su promoción.
+    - `password_hash`: TEXT (Optional) — hash bcrypt de la contraseña. Nulo hasta la promoción a Miembro.
     - `nombre_completo`: VARCHAR(255) (Not Null)
     - `genero`: VARCHAR(20) (Optional)
     - `fecha_nacimiento`: DATE (Optional)
     - `telefono`: VARCHAR(20) (Optional)
-    - `ci`: VARCHAR(20) (Optional)
+    - `ci`: VARCHAR(20) (Unique, Optional)
     - `foto_url`: TEXT (Optional)
-    - `fecha_recibimiento`: DATE (Optional)
+    - `fecha_inscripcion`: DATE (Optional) — fecha de ingreso como Probacionista.
+    - `fecha_recibimiento`: DATE (Optional) — fecha de promoción a Miembro.
+    - `fecha_entrevista`: DATE (Optional) — fecha de entrevista previa a promoción. Solo visible desde Bandeja de Aprobación (spec 003, spec 017).
+    - `entrevista_completada`: BOOLEAN (Default FALSE) — indicador de entrevista realizada. Solo visible desde Bandeja de Aprobación (spec 003, spec 017).
+    - `comentarios`: TEXT (Optional, Nullable) — notas internas del Escolástico. Solo editable por Escolástico; invisible para el usuario. *(añadido en spec 023)*
     - `estado`: VARCHAR(20) (Default 'Activo') - Enum: 'Activo', 'Inactivo'
     - `created_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
     - `updated_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
+- **Tabla: `usuario_roles`** *(introducida en spec 018 — relación N:M entre usuarios y roles)*
+    - PK compuesta: `(usuario_id, rol_id)`
+    - `usuario_id`: UUID (FK -> usuarios, Not Null, CASCADE DELETE)
+    - `rol_id`: UUID (FK -> roles, Not Null)
+    - `asignado_por_id`: UUID (FK -> usuarios, Optional) — Escolástico que realizó la asignación.
+    - `fecha_asignacion`: TIMESTAMP WITH TIME ZONE (Default NOW())
+    - **Reglas**: Un usuario debe tener al menos un rol activo. Probacionista, ExProbacionista y ExMiembro son roles exclusivos (incompatibles con cualquier otro rol simultáneo).
+- **Tabla: `refresh_tokens`** *(tabla técnica de autenticación)*
+    - `id`: UUID (PK, DEFAULT gen_random_uuid())
+    - `usuario_id`: UUID (FK -> usuarios, CASCADE DELETE)
+    - `token_hash`: TEXT (Unique, Not Null) — SHA-256 del refresh token.
+    - `expires_at`: TIMESTAMP WITH TIME ZONE (Not Null)
+    - `revoked`: BOOLEAN (Default FALSE)
+    - `created_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
+- **Tabla: `tokens_recuperacion`** *(tabla técnica de recuperación de contraseña)*
+    - `id`: UUID (PK, DEFAULT gen_random_uuid())
+    - `usuario_id`: UUID (FK -> usuarios, CASCADE DELETE)
+    - `token`: TEXT (Unique, Not Null) — token de un solo uso.
+    - `expires_at`: TIMESTAMP WITH TIME ZONE (Not Null)
+    - `used`: BOOLEAN (Default FALSE)
+    - `created_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
 
 ### 2. Estructura Académica (Pensum y Temas)
 - **Tabla: `materias`**
@@ -95,6 +142,7 @@ Como **arquitecto de software o desarrollador**, quiero definir las entidades ba
     - `nombre`: VARCHAR(100) (Not Null) - ej. 'Psicología'
     - `descripcion`: TEXT (Optional) - Temario base
     - `es_curso_probacion`: BOOLEAN (Default FALSE)
+    - `nivel`: INTEGER (Not Null) - Nivel académico/orden en el pensum.
     - `estado`: VARCHAR(20) (Default 'Activo') - Enum: 'Activo', 'Inactivo'
     - `created_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
     - `updated_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
@@ -125,8 +173,9 @@ Como **arquitecto de software o desarrollador**, quiero definir las entidades ba
     - `codigo`: VARCHAR(50) (Unique, Not Null) - Formato: `[Materia]-MM-YYYY-[Paralelo]`
     - `mes_inicio`: INTEGER (Not Null)
     - `anio_inicio`: INTEGER (Not Null)
-    - `Celador`: VARCHAR(10) (Not Null)
+    - `celador`: VARCHAR(50) (Not Null)
     - `fecha_inicio`: DATE (Not Null)
+    - `fecha_fin`: DATE (Not Null)
     - `estado`: VARCHAR(20) (Default 'Activa') - Enum: 'Activa', 'Inactiva', 'Finalizada'
     - `created_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
     - `updated_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
@@ -144,9 +193,8 @@ Como **arquitecto de software o desarrollador**, quiero definir las entidades ba
     - `id`: UUID (PK, DEFAULT gen_random_uuid())
     - `clase_id`: UUID (FK -> clases, Not Null)
     - `fecha`: DATE (Not Null)
-    - `tipo`: VARCHAR(20) (Not Null) - Enum: 'clase', 'examen', 'practica', 'reposicion'
+    - `tipo`: VARCHAR(20) (Not Null) - Enum: 'Clase', 'Examen', 'Practica', 'Repaso'
     - `tema_id`: UUID (FK -> temas, Optional) - Tema avanzado en la sesión.
-    - `concluyo_tema`: BOOLEAN (Default FALSE)
     - `comentarios`: TEXT (Optional)
     - `created_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
 
@@ -157,21 +205,24 @@ Como **arquitecto de software o desarrollador**, quiero definir las entidades ba
     - `clase_id`: UUID (FK -> clases, Not Null)
     - `fecha_inscripcion`: TIMESTAMP WITH TIME ZONE (Default NOW())
     - `fecha_baja`: TIMESTAMP WITH TIME ZONE (Optional)
-    - `motivo_baja`: TEXT (Optional)
+    - `motivo_baja`: VARCHAR(20) (Optional) - Enum: 'Ausencia', 'Laboral', 'Personal', 'Desconocido'
     - `estado`: VARCHAR(20) (Default 'Activo') - Enum: 'Activo', 'Baja', 'Finalizado'
+    - `concluyo_temario_materia`: BOOLEAN (Default FALSE) - Registro individual por alumno. Solo instructor titular o administrador.
+    - `fecha_conclusion_temario`: DATE (Optional) - Fecha manual de finalización de temas.
+    - `comentarios`: TEXT (Optional)
     - `created_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
     - `updated_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
 - **Tabla: `asistencias`**
     - `id`: UUID (PK, DEFAULT gen_random_uuid())
     - `inscripcion_id`: UUID (FK -> inscripciones, Not Null)
     - `sesion_id`: UUID (FK -> sesiones, Not Null) - Vinculación directa a la sesión.
-    - `estado`: VARCHAR(20) (Not Null) - Enum: 'Presente', 'Ausente', 'Tarde', 'Justificado'
+    - `estado`: VARCHAR(20) (Not Null) - Enum: 'Presente', 'Ausente', 'Licencia'
     - `created_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
     - `updated_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
 - **Tabla: `notas`**
     - `id`: UUID (PK, DEFAULT gen_random_uuid())
     - `inscripcion_id`: UUID (FK -> inscripciones, Not Null)
-    - `nota`: VARCHAR(20) (Not Null) - Enum: 'Sobresaliente', 'Repite', 'Aprobo'
+    - `nota`: VARCHAR(20) (Not Null) - Enum: 'Sobresaliente', 'Solido', 'Aprobado', 'Reprobado'
     - `tipo_evaluacion`: VARCHAR(100) (Not Null) - ej. 'Parcial 1'
     - `created_at`: TIMESTAMP WITH TIME ZONE (Default NOW())
     - `updated_at`: TIMESTAMP WITH TIME ZONE (Default NOW())

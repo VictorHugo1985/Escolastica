@@ -1,0 +1,17 @@
+{
+  "name": "@escolastica/database",
+  "version": "1.0.0",
+  "private": true,
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.11.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2",
+    "@types/node": "^20.11.28"
+  }
+}

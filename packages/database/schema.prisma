@@ -1,0 +1,314 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [pgcrypto]
+}
+
+// --- ENUMS GLOBALES ---
+
+enum Rol {
+  Escolastico
+  Instructor
+  Miembro
+  Probacionista
+  ExProbacionista
+  ExMiembro
+}
+
+enum EstadoGeneral {
+  Activo
+  Inactivo
+}
+
+enum EstadoClase {
+  Activa
+  Inactiva
+  Finalizada
+}
+
+enum EstadoInscripcion {
+  Activo
+  Baja
+  Finalizado
+}
+
+enum EstadoAsistencia {
+  Presente
+  Ausente
+  Licencia
+}
+
+enum EstadoNota {
+  Sobresaliente
+  Solido
+  Aprobado
+  Reprobado
+}
+
+enum TipoSesion {
+  Clase
+  Examen
+  Practica
+  Repaso
+}
+
+enum MotivoBaja {
+  Ausencia
+  Laboral
+  Personal
+  Desconocido
+}
+
+// --- MODELOS DE IDENTIDAD ---
+
+model roles {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre String @unique @db.VarChar(50)
+
+  // Relaciones
+  usuarios usuario_roles[]
+}
+
+model usuario_roles {
+  usuario_id       String   @db.Uuid
+  rol_id           String   @db.Uuid
+  asignado_por_id  String?  @db.Uuid
+  fecha_asignacion DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relaciones
+  usuario      usuarios  @relation("UsuarioRoles", fields: [usuario_id], references: [id], onDelete: Cascade)
+  rol          roles     @relation(fields: [rol_id], references: [id])
+  asignado_por usuarios? @relation("AsignacionesDadas", fields: [asignado_por_id], references: [id])
+
+  @@id([usuario_id, rol_id])
+}
+
+model usuarios {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String?       @unique @db.VarChar(255)
+  password_hash         String?       @db.Text
+  nombre_completo       String        @db.VarChar(255)
+  genero                String?       @db.VarChar(20)
+  fecha_nacimiento      DateTime?     @db.Date
+  telefono              String?       @db.VarChar(20)
+  ci                    String?       @unique @db.VarChar(20)
+  foto_url              String?       @db.Text
+  fecha_inscripcion     DateTime?     @db.Date
+  fecha_recibimiento    DateTime?     @db.Date
+  fecha_entrevista      DateTime?     @db.Date
+  entrevista_completada Boolean       @default(false)
+  comentarios           String?       @db.Text
+  must_change_password  Boolean       @default(false)
+  estado                EstadoGeneral @default(Activo)
+  created_at            DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  roles               usuario_roles[]      @relation("UsuarioRoles")
+  roles_asignados     usuario_roles[]      @relation("AsignacionesDadas")
+  clases_inst         clases[]             @relation("InstructorClases")
+  inscripciones       inscripciones[]
+  logs_auditoria      logs_auditoria[]
+  refresh_tokens      refresh_tokens[]
+  tokens_recuperacion tokens_recuperacion[]
+}
+
+model refresh_tokens {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id  String   @db.Uuid
+  token_hash  String   @unique @db.Text
+  expires_at  DateTime @db.Timestamptz(6)
+  revoked     Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relaciones
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+model tokens_recuperacion {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id  String   @db.Uuid
+  token       String   @unique @db.Text
+  expires_at  DateTime @db.Timestamptz(6)
+  used        Boolean  @default(false)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relaciones
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+// --- MODELOS ACADÉMICOS (PENSUM) ---
+
+model materias {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre             String        @db.VarChar(100)
+  descripcion        String?       @db.Text
+  es_curso_probacion Boolean       @default(false)
+  estado             EstadoGeneral @default(Activo)
+  nivel              Int
+  created_at         DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  temas  temas[]
+  clases clases[]
+}
+
+model temas {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  materia_id  String        @db.Uuid
+  titulo      String        @db.VarChar(255)
+  descripcion String?       @db.Text
+  orden       Int
+  estado      EstadoGeneral @default(Activo)
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  materia  materias   @relation(fields: [materia_id], references: [id])
+  sesiones sesiones[]
+}
+
+// --- MODELOS DE INFRAESTRUCTURA ---
+
+model aulas {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre     String   @unique @db.VarChar(50)
+  capacidad  Int?
+  ubicacion  String?  @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  horarios horarios[]
+}
+
+model horarios {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clase_id    String   @db.Uuid
+  aula_id     String?  @db.Uuid
+  dia_semana  Int // 0 (Domingo) a 6 (Sábado)
+  hora_inicio DateTime @db.Time
+  hora_fin    DateTime @db.Time
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relaciones
+  aula  aulas? @relation(fields: [aula_id], references: [id])
+  clase clases @relation(fields: [clase_id], references: [id])
+}
+
+// --- MODELOS DE INSTANCIA ACADÉMICA ---
+
+model clases {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  materia_id    String      @db.Uuid
+  instructor_id String      @db.Uuid
+  codigo        String      @unique @db.VarChar(50)
+  mes_inicio    Int
+  anio_inicio   Int
+  celador       String      @db.VarChar(50)
+  fecha_inicio  DateTime    @db.Date
+  fecha_fin     DateTime    @db.Date
+  estado        EstadoClase @default(Activa)
+  comentarios   String?     @db.Text
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  materia       materias        @relation(fields: [materia_id], references: [id])
+  instructor    usuarios        @relation("InstructorClases", fields: [instructor_id], references: [id])
+  horarios      horarios[]
+  sesiones      sesiones[]
+  inscripciones inscripciones[]
+}
+
+model sesiones {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clase_id    String     @db.Uuid
+  fecha       DateTime   @db.Date
+  tipo        TipoSesion
+  tema_id     String?    @db.Uuid
+  comentarios String?    @db.Text
+  created_at  DateTime   @default(now()) @db.Timestamptz(6)
+
+  // Relaciones
+  clase       clases        @relation(fields: [clase_id], references: [id])
+  tema        temas?        @relation(fields: [tema_id], references: [id])
+  asistencias asistencias[]
+}
+
+// --- SEGUIMIENTO Y EVALUACIÓN ---
+
+model inscripciones {
+  id                        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id                String            @db.Uuid
+  clase_id                  String            @db.Uuid
+  fecha_inscripcion         DateTime          @default(now()) @db.Timestamptz(6)
+  fecha_baja                DateTime?         @db.Timestamptz(6)
+  motivo_baja               MotivoBaja?
+  estado                    EstadoInscripcion @default(Activo)
+  concluyo_temario_materia  Boolean           @default(false)
+  fecha_conclusion_temario  DateTime?         @db.Date
+  comentarios               String?           @db.Text
+  created_at                DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  usuario     usuarios      @relation(fields: [usuario_id], references: [id])
+  clase       clases        @relation(fields: [clase_id], references: [id])
+  asistencias asistencias[]
+  notas       notas[]
+
+  @@unique([usuario_id, clase_id])
+}
+
+model asistencias {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inscripcion_id String           @db.Uuid
+  sesion_id      String           @db.Uuid
+  estado         EstadoAsistencia
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  inscripcion inscripciones @relation(fields: [inscripcion_id], references: [id])
+  sesion      sesiones      @relation(fields: [sesion_id], references: [id])
+
+  @@unique([inscripcion_id, sesion_id])
+}
+
+model notas {
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inscripcion_id  String     @db.Uuid
+  nota            EstadoNota
+  tipo_evaluacion String     @db.VarChar(100)
+  created_at      DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  inscripcion inscripciones @relation(fields: [inscripcion_id], references: [id])
+}
+
+// --- AUDITORÍA ---
+
+model logs_auditoria {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuario_id     String?  @db.Uuid
+  accion         String   @db.VarChar(100)
+  tabla_afectada String   @db.VarChar(100)
+  valor_anterior Json?
+  valor_nuevo    Json?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relaciones
+  usuario usuarios? @relation(fields: [usuario_id], references: [id])
+}

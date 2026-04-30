@@ -76,7 +76,7 @@ Como **administrador**, quiero exportar los reportes de asistencia, notas y movi
 ### Functional Requirements
 
 - **FR-001**: El sistema MUST proveer un dashboard administrativo optimizado para resolución de escritorio (1920x1080 o superior).
-- **FR-002**: El sistema MUST permitir filtrar todos los reportes por `Periodo Académico`.
+- **FR-002**: El sistema MUST permitir filtrar todos los reportes por rango de fechas o por `anio_inicio` + `mes_inicio` de la clase (no existe entidad "Periodo Académico").
 - **FR-003**: El sistema MUST mostrar estadísticas agregadas de asistencia (Promedio por materia, por alumno).
 - **FR-004**: El sistema MUST mostrar estadísticas de rendimiento académico (Notas promedio, tasa de aprobación).
 - **FR-005**: El sistema MUST incluir un log de auditoría visual de todos los movimientos de alumnos (Altas/Bajas).
