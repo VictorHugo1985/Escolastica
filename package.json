@@ -1,0 +1,27 @@
+{
+  "name": "escolastica",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@11.12.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "db:generate": "turbo db:generate --filter=@escolastica/database",
+    "db:migrate": "turbo db:migrate --filter=@escolastica/database",
+    "db:seed": "turbo db:seed --filter=@escolastica/database",
+    "db:studio": "turbo db:studio --filter=@escolastica/database"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "typescript": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

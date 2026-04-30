@@ -22,13 +22,13 @@ Como **administrador de la Secretaría de Escolástica**, quiero registrar y con
 
 ---
 
-### User Story 2 - Asigar instructor a la materia (Priority: P1)
+### User Story 2 - Asigar instructor a la Clase (Priority: P1)
 
-Como **escolastico**, quiero asignar a uno o más instructores responsables a una materia, para que ellos puedan gestionar las asistencias y notas de sus alumnos.
+Como **escolastico**, quiero asignar a un instructor responsable a una Clase, para que pueda gestionar las asistencias y notas de sus alumnos.
 
 **Why this priority**: Define la responsabilidad docente y habilita el acceso de los instructores a sus clases en sus dashboards personales.
 
-**Independent Test**: Asignar un usuario con rol de "Instructor" a una materia y verificar que la relación se establezca correctamente.
+**Independent Test**: Asignar un usuario con rol de "Instructor" a una Clase y verificar que la relación se establezca correctamente.
 
 **Acceptance Scenarios**:
 
@@ -39,7 +39,7 @@ Como **escolastico**, quiero asignar a uno o más instructores responsables a un
 
 ### User Story 3 - Gestion de Horarios Management (Priority: P2)
 
-Como **escolastico**, quiero definir los días y horarios en los que se imparte una materia, para que los instructores y alumnos tengan claridad sobre su calendario.
+Como **escolastico**, quiero definir los días y horarios en los que se imparte una Clase, para que los instructores y alumnos tengan claridad sobre su calendario.
 
 **Why this priority**: Permite la organización del tiempo y evita solapamientos de clases en el calendario institucional.
 
@@ -52,20 +52,7 @@ Como **escolastico**, quiero definir los días y horarios en los que se imparte 
 
 ---
 
-### User Story 4 - Member Enrollment (Priority: P1)
-
-Como **Escolástica**, quiero inscribir a miembros en una materia específica para que puedan asistir a clase y ser evaluados.
-
-**Why this priority**: Es fundamental para el control de asistencia y el registro de notas. Sin inscripciones, la operatividad diaria de la clase no es posible.
-
-**Independent Test**: Inscribir a un miembro en una materia y verificar que aparezca en la lista de alumnos de dicha materia.
-
-**Acceptance Scenarios**:
-
-1. **Given** una materia activa, **When** el escolastico busca a un miembro por nombre o correo y lo añade, **Then** el sistema crea la inscripción con estado "Activo".
-2. **Given** el proceso de inscripción, **When** se busca personal para inscribir, **Then** el sistema permite seleccionar a cualquier usuario registrado (ya que todos son miembros inherentes).
-
----
+> La gestión completa de inscripciones (alta, baja, historial de movimientos) está definida en **Spec 007 (Inscripciones)**.
 
 ### Edge Cases
 
@@ -78,7 +65,7 @@ Como **Escolástica**, quiero inscribir a miembros en una materia específica pa
 
 - **FR-001**: El sistema MUST permitir la creación, lectura, actualización y desactivación (CRUD) de Materias.
 - **FR-002**: El sistema MUST validar que solo usuarios con rol de `Instructor` puedan ser asignados como docentes de una materia.
-- **FR-003**: El sistema MUST permitir la inscripción de cualquier usuario (Miembro) en una materia.
+- **FR-003**: Ver **Spec 007** para el registro de inscripciones (altas/bajas) de alumnos en materias.
 - **FR-004**: El sistema MUST permitir definir múltiples bloques horarios para una sola materia (ej. Martes y Jueves).
 - **FR-005**: El sistema MUST mantener un estado de la inscripción (Activo, Baja, Finalizado).
 - **FR-006**: El sistema MUST permitir filtrar materias por nombre, instructor o periodo académico.

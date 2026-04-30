@@ -1,0 +1,32 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Prisma
+/packages/database/schema.prisma.backup
+
+# Turbo cache
+.turbo/
+
+# Claude Code AI assistant config
+.claude/

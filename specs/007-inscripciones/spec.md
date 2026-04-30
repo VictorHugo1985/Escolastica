@@ -7,6 +7,23 @@ B# Feature Specification: Enrollment Movements
 
 ## User Scenarios & Testing *(mandatory)*
 
+### User Story 0 - Inscripción Universal (Asignación a Clases como Miembro) (Priority: P1)
+
+Como **escolástico**, quiero poder asignar a **cualquier usuario** del sistema (ya sea miembro, instructor o escolastico) como alumno de una materia, basándome en su condición de "Miembro", para permitir que todo el personal de la escuela pueda cursar materias.
+
+Un usuario Probacionista solo puede cursar materias de nivel Probacionista (El registro materia tendra una bandera o campo especifico que indica que es para Probacionistas y solo pueden inscribirse probacionistas)
+
+**Why this priority**: Refleja la naturaleza de la escuela donde instructores y escolasticos también pueden ser alumnos de otras materias.
+
+**Independent Test**: Seleccionar una materia, buscar a un usuario con rol de "Escolastico" e "Instructor", y verificar que el sistema permite añadirlo a la lista de alumnos asignados a esa materia.
+
+**Acceptance Scenarios**:
+
+1. **Given** la gestión de alumnos de una materia, **When** se busca personal para asignar, **Then** el sistema muestra a todos los usuarios registrados (ya que todos son miembros, menos los probacionista que tienen sus materias especificas).
+2. **Given** un usuario con roles de Escolastico e Instructor, **When** se le asigna como alumno a una clase, **Then** el sistema permite la asignación sin restricciones basadas en sus otros roles.
+3. **Given** un Instructor titular de una materia, **When** se intenta inscribirlo como alumno en esa misma materia, **Then** el sistema bloquea la acción para asegurar la integridad académica.
+
+
 ### User Story 1 - Register New Enrollment (Alta) (Priority: P1)
 
 Como **personal de Secretaría de Escolástica**, quiero inscribir a un miembro en una materia para el periodo actual, de modo que pueda comenzar a asistir a clases y ser evaluado.
@@ -24,7 +41,7 @@ Como **personal de Secretaría de Escolástica**, quiero inscribir a un miembro 
 
 ### User Story 2 - Register Withdrawal (Baja) (Priority: P1)
 
-Como **personal de Secretaría**, quiero registrar la baja de un alumno de una materia específica, indicando el motivo y la fecha, para mantener el historial académico veraz y liberar el cupo si fuera necesario.
+Como **Escolastico o Instructor**, quiero registrar la baja de un alumno de una materia específica (softdelete) o hard delete en caso de error de inscripcion, indicando el motivo y la fecha, para mantener el historial académico veraz y liberar el cupo si fuera necesario en el caso de softdelete.
 
 **Why this priority**: La Constitución exige explícitamente un histórico de bajas por alumno y materia. Es crítico para auditoría y reportes.
 
@@ -39,7 +56,7 @@ Como **personal de Secretaría**, quiero registrar la baja de un alumno de una m
 
 ### User Story 3 - View Movement History (Priority: P1)
 
-Como **administrador**, quiero consultar el historial completo de movimientos (altas y bajas) de un alumno o de una materia, para entender la trayectoria académica y las razones de deserción.
+Como **escolastico**, quiero consultar el historial completo de movimientos (altas y bajas) de un alumno o de una materia, para entender la trayectoria académica y las razones de deserción.
 
 **Why this priority**: Permite el análisis administrativo y la toma de decisiones basada en el comportamiento histórico de los alumnos.
 
@@ -65,7 +82,7 @@ Como **escolastico**, quiero  incluir en la inscripcion del alumno un campo que 
 
 - **Re-inscripción tras Baja**: Si un alumno que se dio de baja desea volver a inscribirse en la misma materia dentro del mismo periodo académico, el sistema reactivará el registro anterior cambiando su estado de "Baja" a "Activo".
 - **Baja Retroactiva**: Un administrador puede registrar una baja con fecha anterior a la actual para corregir errores, quedando esto registrado en el log de auditoría.
-- **Inscripción en Periodos Pasados**: El sistema impide terminantemente crear inscripciones nuevas en periodos académicos que ya han sido cerrados.
+- **Inscripción en Clases Finalizadas**: El sistema impide crear inscripciones nuevas en clases cuyo estado sea `'Finalizada'`.
 
 ## Requirements *(mandatory)*
 

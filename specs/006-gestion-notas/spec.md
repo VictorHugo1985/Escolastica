@@ -5,6 +5,12 @@
 **Status**: Draft  
 **Input**: User description: "Grades and Kardex (Recording of exam results and generation of individual academic records/Kardex)"
 
+## Clarifications
+
+### Session 2026-04-21
+
+- Q: ¿El sistema de calificaciones debe ser un catálogo parametrizable o un Enum fijo? → A: Enum fijo de 4 valores: `'Sobresaliente', 'Solido', 'Aprobado', 'Reprobado'`, alineado con la tabla `notas` del diccionario de datos (spec 002). No se requiere tabla adicional `tipos_nota`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Registro de notas por Clase (Priority: P1)
@@ -18,11 +24,11 @@ Como **instructor o escolastico**, quiero registrar las notas finales de las cla
 **Acceptance Scenarios**:
 
 1. **Given** un instructor en su panel de clase, **When** selecciona la opción de inscritos **Then** el sistema muestra todos los inscritos y para cada uno hay que ingresar y registar su nota final.
-2. **Given** una nota ingresada, **When** el instructor intenta guardar, **Then** el sistema obtiene la lista de calificaciones posibles, ej.: EB, BO, EX, ME, ETC (Esta lista de calificaciones tiene que ser parametrizable y tener codigo y descripcion, aplica para todas las materias).
+2. **Given** una nota ingresada, **When** el instructor intenta guardar, **Then** el sistema valida que la calificación sea uno de los valores del Enum predefinido: `'Sobresaliente'`, `'Solido'`, `'Aprobado'`, `'Reprobado'`.
 
 ---
 
-### User Story 3 - Administrative Academic Review (Priority: P2)
+### User Story 2 - Administrative Academic Review (Priority: P2)
 
 Como **personal de Secretaría de Escolástica**, quiero consultar el Kardex de cualquier alumno y generar un reporte de su situación académica, para fines de auditoría o certificación interna.
 
@@ -47,7 +53,7 @@ Como **personal de Secretaría de Escolástica**, quiero consultar el Kardex de 
 ### Functional Requirements
 
 - **FR-001**: El sistema MUST permitir a los instructores registrar y editar notas para los alumnos inscritos en sus materias.
-- **FR-002**: El sistema MUST validar que las notas se encuentren en el listado predefinido.
+- **FR-002**: El sistema MUST validar que las notas correspondan al Enum fijo: `'Sobresaliente'`, `'Solido'`, `'Aprobado'`, `'Reprobado'` (definido en spec 002, tabla `notas`).
 - **FR-003**: El sistema MUST generar una vista de Kardex que consolide la trayectoria académica de cada Usuario (Miembro).
 - **FR-004**: El Kardex MUST incluir: nombre de la materia, periodo académico, nota final, porcentaje de asistencia, comentario y estado final.
 - **FR-005**: El sistema MUST permitir filtrar el Kardex por periodos académicos o estados de materia.
