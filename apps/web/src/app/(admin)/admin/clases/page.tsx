@@ -381,7 +381,7 @@ export default function ClasesPage() {
                       </Select>
                     )}
                   />
-                  <FormHelperText>{errors.instructor_id?.message}</FormHelperText>
+                  <FormHelperText>{errors.instructor_id?.message as string}</FormHelperText>
                 </FormControl>
               </Grid>
 
@@ -405,7 +405,7 @@ export default function ClasesPage() {
                           </Select>
                         )}
                       />
-                      <FormHelperText>{(errors as any).horario?.dia_semana?.message}</FormHelperText>
+                      <FormHelperText>{(errors as any).horario?.dia_semana?.message as string}</FormHelperText>
                     </FormControl>
                   </Grid>
                   <Grid item xs={6}>
