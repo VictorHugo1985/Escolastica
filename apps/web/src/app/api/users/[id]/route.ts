@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const updated = await prisma.usuarios.update({
       where: { id: params.id },
       data: {
-        ...(data.email && { email: data.email }),
+        ...('email' in data && { email: data.email || null }),
         ...(data.nombre_completo && { nombre_completo: data.nombre_completo }),
         ...(data.genero !== undefined && { genero: data.genero || null }),
         ...(data.fecha_nacimiento && { fecha_nacimiento: new Date(data.fecha_nacimiento) }),

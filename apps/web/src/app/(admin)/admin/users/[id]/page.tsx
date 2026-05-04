@@ -50,6 +50,7 @@ export default function UserFormPage() {
     handleSubmit,
     reset,
     control,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<any>({
     resolver: zodResolver(isNew ? CreateUserSchema : UpdateUserSchema),
@@ -93,22 +94,28 @@ export default function UserFormPage() {
     if (!isNew) loadUser();
   }, [id]);
 
-  async function onSubmit(data: any) {
+  async function onSubmit(resolvedData: any) {
     setError('');
     setSuccess('');
-    const payload = Object.fromEntries(
-      Object.entries(data).filter(([, v]) => v !== undefined && v !== null && v !== '')
-    );
-    // estado se gestiona como estado React (fuera de react-hook-form) para evitar
-    // que el zodResolver lo transforme o descarte; se inyecta directo al payload
-    if (!isNew) {
-      payload.estado = currentEstado;
-    }
     try {
       if (isNew) {
+        const payload = Object.fromEntries(
+          Object.entries(resolvedData).filter(([, v]) => v !== undefined && v !== null && v !== '')
+        );
         await api.post('/users', payload);
         router.push('/admin/users');
       } else {
+        const v = getValues();
+        const payload: Record<string, any> = { estado: currentEstado };
+        if (v.nombre_completo) payload.nombre_completo = v.nombre_completo;
+        if (v.email !== undefined) payload.email = v.email || null;
+        if (v.ci !== undefined) payload.ci = v.ci || null;
+        if (v.telefono !== undefined) payload.telefono = v.telefono || null;
+        if (v.genero !== undefined) payload.genero = v.genero || null;
+        if (v.fecha_nacimiento) payload.fecha_nacimiento = v.fecha_nacimiento;
+        if (v.fecha_inscripcion) payload.fecha_inscripcion = v.fecha_inscripcion;
+        if (v.fecha_recibimiento) payload.fecha_recibimiento = v.fecha_recibimiento;
+        if (v.foto_url !== undefined) payload.foto_url = v.foto_url || null;
         await api.patch(`/users/${id}`, payload);
         setSuccess('Perfil actualizado correctamente');
       }
