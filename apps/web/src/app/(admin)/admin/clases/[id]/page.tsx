@@ -37,6 +37,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import SchoolIcon from '@mui/icons-material/School';
 import SearchIcon from '@mui/icons-material/Search';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
@@ -46,6 +47,7 @@ interface Inscripcion {
   usuario_id: string;
   fecha_inscripcion: string;
   concluyo_temario_materia: boolean;
+  nota_final: 'Sobresaliente' | 'Solido' | 'Aprobado' | 'Reprobado' | null;
   estado: string;
   usuario: Usuario;
 }
@@ -64,6 +66,7 @@ interface Clase {
 }
 
 const MOTIVOS = ['Ausencia', 'Laboral', 'Personal', 'Desconocido'] as const;
+const NOTAS_FINALES = ['Sobresaliente', 'Solido', 'Aprobado', 'Reprobado'] as const;
 
 export default function ClaseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -81,6 +84,7 @@ export default function ClaseDetailPage() {
   const [bajaComentarios, setBajaComentarios] = useState('');
   const [givingBaja, setGivingBaja] = useState(false);
   const [iniciandoSesion, setIniciandoSesion] = useState(false);
+  const [finalizarOpen, setFinalizarOpen] = useState(false);
 
   // Inscribir dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -149,6 +153,30 @@ export default function ClaseDetailPage() {
       await loadClase();
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Error al actualizar conclusión');
+    }
+  }
+
+  // --- Nota final ---
+  async function updateNotaFinal(insc: Inscripcion, nota: string | null) {
+    try {
+      await api.patch(`/inscripciones/${insc.id}/conclusion`, {
+        nota_final: nota || null,
+      });
+      await loadClase();
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'Error al actualizar nota final');
+    }
+  }
+
+  // --- Finalizar clase ---
+  async function finalizarClase() {
+    try {
+      await api.patch(`/clases/${id}/status`, { estado: 'Finalizada' });
+      setFinalizarOpen(false);
+      await loadClase();
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'Error al finalizar la clase');
+      setFinalizarOpen(false);
     }
   }
 
@@ -231,6 +259,25 @@ export default function ClaseDetailPage() {
       ),
     },
     {
+      field: 'nota_final',
+      headerName: 'Nota final',
+      width: 170,
+      minWidth: 140,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <Select
+          size="small"
+          displayEmpty
+          value={(row as Inscripcion).nota_final ?? ''}
+          onChange={(e) => updateNotaFinal(row as Inscripcion, e.target.value || null)}
+          sx={{ fontSize: 13, minWidth: 130 }}
+        >
+          <MenuItem value=""><em>Sin nota</em></MenuItem>
+          {NOTAS_FINALES.map((n) => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+        </Select>
+      ),
+    },
+    {
       field: 'actions',
       headerName: '',
       width: 90,
@@ -271,6 +318,17 @@ export default function ClaseDetailPage() {
                 disabled={iniciandoSesion}
               >
                 Pase de lista
+              </Button>
+            )}
+            {clase.estado === 'Activa' && (
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                startIcon={<CheckCircleOutlineIcon />}
+                onClick={() => setFinalizarOpen(true)}
+              >
+                Finalizar clase
               </Button>
             )}
             <Button
@@ -399,6 +457,22 @@ export default function ClaseDetailPage() {
             onClick={confirmBaja}
           >
             {givingBaja ? <CircularProgress size={18} /> : 'Confirmar baja'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog: Finalizar clase */}
+      <Dialog open={finalizarOpen} onClose={() => setFinalizarOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Finalizar clase</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Esta acción cambiará el estado de la clase a <strong>Finalizada</strong> y no podrá revertirse desde la aplicación.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFinalizarOpen(false)}>Cancelar</Button>
+          <Button variant="contained" color="error" onClick={finalizarClase}>
+            Confirmar
           </Button>
         </DialogActions>
       </Dialog>

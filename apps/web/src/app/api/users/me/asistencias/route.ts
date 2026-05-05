@@ -20,7 +20,10 @@ export async function GET(req: NextRequest) {
       const presentes = insc.asistencias.filter((a) => a.estado === 'Presente').length;
       return {
         inscripcion_id: insc.id,
-        clase: { id: insc.clase.id, materia: insc.clase.materia },
+        clase: { id: insc.clase.id, codigo: insc.clase.codigo, estado: insc.clase.estado, materia: insc.clase.materia },
+        nota_final: insc.nota_final,
+        concluyo_temario: insc.concluyo_temario_materia,
+        fecha_conclusion_temario: insc.fecha_conclusion_temario,
         total_sesiones: total, presentes,
         ausentes: insc.asistencias.filter((a) => a.estado === 'Ausente').length,
         licencias: insc.asistencias.filter((a) => a.estado === 'Licencia').length,

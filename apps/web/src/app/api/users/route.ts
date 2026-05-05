@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         fecha_nacimiento: data.fecha_nacimiento ? new Date(data.fecha_nacimiento) : undefined,
         telefono: data.telefono || undefined,
         ci: data.ci || undefined,
-        foto_url: data.foto_url || undefined,
+        file_actualizado: data.file_actualizado ?? undefined,
         fecha_inscripcion: data.fecha_inscripcion ? new Date(data.fecha_inscripcion) : undefined,
         fecha_recibimiento: data.fecha_recibimiento ? new Date(data.fecha_recibimiento) : undefined,
       },

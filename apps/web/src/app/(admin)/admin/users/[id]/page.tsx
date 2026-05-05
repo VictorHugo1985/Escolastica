@@ -22,6 +22,8 @@ import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PageHeader from '@/components/ui/PageHeader';
@@ -63,7 +65,7 @@ export default function UserFormPage() {
       fecha_nacimiento: '',
       fecha_inscripcion: '',
       fecha_recibimiento: '',
-      foto_url: '',
+      file_actualizado: false,
     },
   });
 
@@ -79,7 +81,7 @@ export default function UserFormPage() {
         fecha_nacimiento: data.fecha_nacimiento ? data.fecha_nacimiento.split('T')[0] : '',
         fecha_inscripcion: data.fecha_inscripcion ? data.fecha_inscripcion.split('T')[0] : '',
         fecha_recibimiento: data.fecha_recibimiento ? data.fecha_recibimiento.split('T')[0] : '',
-        foto_url: data.foto_url ?? '',
+        file_actualizado: data.file_actualizado ?? false,
       });
       setCurrentRoles(data.roles ?? []);
       setCurrentEstado(data.estado ?? 'Activo');
@@ -115,7 +117,7 @@ export default function UserFormPage() {
         if (v.fecha_nacimiento) payload.fecha_nacimiento = v.fecha_nacimiento;
         if (v.fecha_inscripcion) payload.fecha_inscripcion = v.fecha_inscripcion;
         if (v.fecha_recibimiento) payload.fecha_recibimiento = v.fecha_recibimiento;
-        if (v.foto_url !== undefined) payload.foto_url = v.foto_url || null;
+        payload.file_actualizado = !!v.file_actualizado;
         await api.patch(`/users/${id}`, payload);
         setSuccess('Perfil actualizado correctamente');
       }
@@ -260,11 +262,23 @@ export default function UserFormPage() {
                   {...register('fecha_recibimiento')} />
               </Grid>
 
-              <Grid item xs={12}>
-                <TextField label="URL de foto de perfil" fullWidth placeholder="https://..."
-                  error={!!errors.foto_url}
-                  helperText={errors.foto_url?.message as string}
-                  {...register('foto_url')} />
+              <Grid item xs={12} sm={6}>
+                <Controller
+                  name="file_actualizado"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={!!field.value}
+                          onChange={(e) => field.onChange(e.target.checked)}
+                          color="success"
+                        />
+                      }
+                      label="Documentos presentados"
+                    />
+                  )}
+                />
               </Grid>
 
               {!isNew && (

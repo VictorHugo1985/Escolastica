@@ -26,6 +26,8 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import DownloadIcon from '@mui/icons-material/Download';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
@@ -51,6 +53,7 @@ interface Usuario {
   nombre_completo: string;
   estado: string;
   roles: RolEntry[];
+  file_actualizado: boolean;
   created_at: string;
 }
 
@@ -311,10 +314,26 @@ export default function UsersPage() {
       headerName: 'Roles',
       width: 220,
       renderCell: ({ row }) => (
-        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap', height: '100%' }}>
           {(row.roles as RolEntry[]).map((r) => (
             <Chip key={r.rol.id} label={r.rol.nombre} size="small" />
           ))}
+        </Box>
+      ),
+    },
+    {
+      field: 'file_actualizado',
+      headerName: 'Archivo',
+      width: 110,
+      sortable: false,
+      renderCell: ({ value }) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, height: '100%' }}>
+          {value
+            ? <CheckCircleIcon fontSize="small" color="success" />
+            : <CancelIcon fontSize="small" color="disabled" />}
+          <Typography variant="caption" color={value ? 'success.main' : 'text.disabled'}>
+            {value ? 'Actualizado' : 'Sin archivo'}
+          </Typography>
         </Box>
       ),
     },

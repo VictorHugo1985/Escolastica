@@ -21,6 +21,8 @@ import Tooltip from '@mui/material/Tooltip';
 import PersonIcon from '@mui/icons-material/Person';
 import SchoolIcon from '@mui/icons-material/School';
 import ClassIcon from '@mui/icons-material/Class';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
@@ -33,7 +35,10 @@ interface SesionResumen { fecha: string; estado: string; tipo?: string; tema?: s
 
 interface AsistenciaMiembro {
   inscripcion_id: string;
-  clase: { id: string; materia: { id: string; nombre: string } };
+  clase: { id: string; codigo: string; estado: string; materia: { id: string; nombre: string } };
+  nota_final: 'Sobresaliente' | 'Solido' | 'Aprobado' | 'Reprobado' | null;
+  concluyo_temario: boolean;
+  fecha_conclusion_temario: string | null;
   total_sesiones: number;
   presentes: number;
   ausentes: number;
@@ -131,6 +136,18 @@ function SesionDot({ sesion }: { sesion: SesionResumen }) {
   );
 }
 
+const NOTA_COLOR: Record<string, 'success' | 'info' | 'warning' | 'error'> = {
+  Sobresaliente: 'success',
+  Solido: 'info',
+  Aprobado: 'warning',
+  Reprobado: 'error',
+};
+
+function fmtFechaLarga(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-BO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
 function pctToColor(pct: number): string {
   // 0% → red hsl(0), 100% → green hsl(120)
   const hue = Math.round(pct * 1.2);
@@ -177,6 +194,7 @@ export default function AdminKardexPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [soloActivas, setSoloActivas] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -216,7 +234,13 @@ export default function AdminKardexPage() {
     setSelectedId('');
     setSelectedUser(null);
     setData(null);
+    setSoloActivas(true);
   }
+
+  const clasesFiltradas = soloActivas ? clases.filter((c) => c.estado === 'Activa') : clases;
+  const dataInstructorFiltrada = data && modo === 'instructor'
+    ? (soloActivas ? (data as ClaseInstructorStat[]).filter((c) => c.estado === 'Activa') : data as ClaseInstructorStat[])
+    : null;
 
   const labelSelector =
     modo === 'instructor' ? 'Seleccionar instructor' : 'Seleccionar clase';
@@ -268,13 +292,30 @@ export default function AdminKardexPage() {
               {modo === 'instructor' && instructores.map((i) => (
                 <MenuItem key={i.id} value={i.id}>{i.nombre_completo}</MenuItem>
               ))}
-              {modo === 'clase' && clases.map((c) => (
+              {modo === 'clase' && clasesFiltradas.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
                   {c.materia.nombre} — {c.codigo} · {c.instructor.nombre_completo}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
+        )}
+
+        {modo !== 'miembro' && (
+          <ToggleButtonGroup
+            value={soloActivas ? 'activas' : 'todas'}
+            exclusive
+            onChange={(_, v) => {
+              if (!v) return;
+              const next = v === 'activas';
+              setSoloActivas(next);
+              if (modo === 'clase') { setSelectedId(''); setData(null); }
+            }}
+            size="small"
+          >
+            <ToggleButton value="activas">Activas</ToggleButton>
+            <ToggleButton value="todas">Todas</ToggleButton>
+          </ToggleButtonGroup>
         )}
       </Box>
 
@@ -288,6 +329,8 @@ export default function AdminKardexPage() {
         </Alert>
       ) : !data || data.length === 0 ? (
         <Alert severity="info">No hay datos de asistencia registrados.</Alert>
+      ) : modo === 'instructor' && dataInstructorFiltrada?.length === 0 ? (
+        <Alert severity="info">Este instructor no tiene clases activas. Cambiá el filtro a "Todas" para ver el historial completo.</Alert>
       ) : (
         <>
           {/* ── MIEMBRO ── */}
@@ -296,21 +339,57 @@ export default function AdminKardexPage() {
               {(data as AsistenciaMiembro[]).map((a) => (
                 <Card key={a.inscripcion_id} elevation={1}>
                   <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    {/* Encabezado: materia + estado de clase + % asistencia */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                       <SchoolIcon color="primary" fontSize="small" />
                       <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
                         {a.clase.materia.nombre}
                       </Typography>
+                      <Chip
+                        label={a.clase.estado}
+                        size="small"
+                        color={a.clase.estado === 'Activa' ? 'success' : a.clase.estado === 'Finalizada' ? 'default' : 'warning'}
+                        variant="outlined"
+                        sx={{ mr: 0.5 }}
+                      />
                       <PctChip value={a.porcentaje} />
                     </Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                      {a.clase.codigo}
+                    </Typography>
 
                     <BarAsistencia value={a.porcentaje} />
 
+                    {/* Estadísticas de asistencia */}
                     <Box sx={{ display: 'flex', gap: 2, mt: 1.5, flexWrap: 'wrap' }}>
                       <Typography variant="body2" color="text.secondary">Sesiones: <strong>{a.total_sesiones}</strong></Typography>
                       <Typography variant="body2" color="success.main">Presentes: <strong>{a.presentes}</strong></Typography>
                       <Typography variant="body2" color="error.main">Ausentes: <strong>{a.ausentes}</strong></Typography>
                       <Typography variant="body2" color="warning.main">Licencias: <strong>{a.licencias}</strong></Typography>
+                    </Box>
+
+                    {/* Conclusión y nota final */}
+                    <Box sx={{ display: 'flex', gap: 1.5, mt: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {a.concluyo_temario
+                          ? <CheckCircleIcon fontSize="small" color="success" />
+                          : <CancelIcon fontSize="small" color="disabled" />}
+                        <Typography variant="body2" color={a.concluyo_temario ? 'success.main' : 'text.disabled'}>
+                          {a.concluyo_temario ? 'Concluyó temario' : 'Sin concluir temario'}
+                        </Typography>
+                        {a.concluyo_temario && a.fecha_conclusion_temario && (
+                          <Typography variant="caption" color="text.secondary">
+                            ({fmtFechaLarga(a.fecha_conclusion_temario)})
+                          </Typography>
+                        )}
+                      </Box>
+                      {a.nota_final && (
+                        <Chip
+                          label={`Nota: ${a.nota_final}`}
+                          size="small"
+                          color={NOTA_COLOR[a.nota_final] ?? 'default'}
+                        />
+                      )}
                     </Box>
 
                     {a.ultimas_sesiones.length > 0 && (
@@ -334,9 +413,9 @@ export default function AdminKardexPage() {
           {/* ── INSTRUCTOR ── */}
           {modo === 'instructor' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {(data as ClaseInstructorStat[])
-                .sort((a, b) => b.promedio_asistencia - a.promedio_asistencia)
-                .map((c) => (
+              {(dataInstructorFiltrada ?? [])
+                .sort((a: ClaseInstructorStat, b: ClaseInstructorStat) => b.promedio_asistencia - a.promedio_asistencia)
+                .map((c: ClaseInstructorStat) => (
                   <Card key={c.id} elevation={1}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>

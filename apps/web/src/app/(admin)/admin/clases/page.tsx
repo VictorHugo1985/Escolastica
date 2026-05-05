@@ -94,6 +94,7 @@ export default function ClasesPage() {
   const [aulas, setAulas] = useState<Aula[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState('Activa');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingClase, setEditingClase] = useState<Clase | null>(null);
   const [dialogHorarios, setDialogHorarios] = useState<{ id: string; dia_semana: number; hora_inicio: string; hora_fin: string; aula_id?: string }[]>([]);
@@ -355,9 +356,28 @@ export default function ClasesPage() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>Estado</InputLabel>
+          <Select
+            value={estadoFiltro}
+            label="Estado"
+            onChange={(e) => setEstadoFiltro(e.target.value)}
+          >
+            <MenuItem value="Activa">Activa</MenuItem>
+            <MenuItem value="Inactiva">Inactiva</MenuItem>
+            <MenuItem value="Finalizada">Finalizada</MenuItem>
+            <MenuItem value="">Todos</MenuItem>
+          </Select>
+        </FormControl>
+        <Typography variant="body2" color="text.secondary">
+          {(estadoFiltro ? clases.filter((c) => c.estado === estadoFiltro) : clases).length} clase(s)
+        </Typography>
+      </Box>
+
       <Box sx={{ bgcolor: 'background.paper', borderRadius: 2, overflow: 'hidden' }}>
         <DataGrid
-          rows={clases}
+          rows={estadoFiltro ? clases.filter((c) => c.estado === estadoFiltro) : clases}
           columns={columns}
           loading={loading}
           autoHeight

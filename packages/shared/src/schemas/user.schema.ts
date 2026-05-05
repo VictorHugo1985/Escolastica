@@ -12,7 +12,7 @@ export const CreateUserSchema = z.object({
   fecha_nacimiento:  optRef(z.string().date('Fecha inválida')),
   telefono:          optRef(z.string().regex(/^\d{7,15}$/, 'Teléfono debe tener entre 7 y 15 dígitos')),
   ci:                z.string().max(20).optional(),
-  foto_url:          optRef(z.string().url('URL inválida')),
+  file_actualizado:  z.boolean().optional(),
   fecha_inscripcion: optRef(z.string().date('Fecha inválida')),
   fecha_recibimiento: optRef(z.string().date('Fecha inválida')),
 });

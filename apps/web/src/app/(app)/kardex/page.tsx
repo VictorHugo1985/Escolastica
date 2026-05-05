@@ -10,12 +10,29 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import LinearProgress from '@mui/material/LinearProgress';
 import SchoolIcon from '@mui/icons-material/School';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
+const NOTA_COLOR: Record<string, 'success' | 'info' | 'warning' | 'error'> = {
+  Sobresaliente: 'success',
+  Solido: 'info',
+  Aprobado: 'warning',
+  Reprobado: 'error',
+};
+
+function fmtFechaLarga(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-BO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
 interface AsistenciaResumen {
   inscripcion_id: string;
-  clase: { id: string; materia: { id: string; nombre: string } };
+  clase: { id: string; codigo: string; estado: string; materia: { id: string; nombre: string } };
+  nota_final: 'Sobresaliente' | 'Solido' | 'Aprobado' | 'Reprobado' | null;
+  concluyo_temario: boolean;
+  fecha_conclusion_temario: string | null;
   total_sesiones: number;
   presentes: number;
   ausentes: number;
@@ -52,16 +69,25 @@ export default function KardexPage() {
           {asistencias.map((a) => (
             <Card key={a.inscripcion_id} elevation={1}>
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <SchoolIcon color="primary" fontSize="small" />
-                  <Typography variant="h6" component="span">{a.clase.materia.nombre}</Typography>
+                  <Typography variant="h6" component="span" sx={{ flex: 1 }}>{a.clase.materia.nombre}</Typography>
+                  <Chip
+                    label={a.clase.estado}
+                    size="small"
+                    color={a.clase.estado === 'Activa' ? 'success' : a.clase.estado === 'Finalizada' ? 'default' : 'warning'}
+                    variant="outlined"
+                    sx={{ mr: 0.5 }}
+                  />
                   <Chip
                     label={`${a.porcentaje}%`}
                     size="small"
                     color={a.porcentaje >= 75 ? 'success' : a.porcentaje >= 50 ? 'warning' : 'error'}
-                    sx={{ ml: 'auto' }}
                   />
                 </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  {a.clase.codigo}
+                </Typography>
 
                 <LinearProgress
                   variant="determinate"
@@ -70,7 +96,7 @@ export default function KardexPage() {
                   sx={{ mb: 1.5, height: 8, borderRadius: 4 }}
                 />
 
-                <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                   <Typography variant="body2" color="text.secondary">
                     Sesiones: <strong>{a.total_sesiones}</strong>
                   </Typography>
@@ -83,6 +109,29 @@ export default function KardexPage() {
                   <Typography variant="body2" color="warning.main">
                     Licencias: <strong>{a.licencias}</strong>
                   </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1.5, mt: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {a.concluyo_temario
+                      ? <CheckCircleIcon fontSize="small" color="success" />
+                      : <CancelIcon fontSize="small" color="disabled" />}
+                    <Typography variant="body2" color={a.concluyo_temario ? 'success.main' : 'text.disabled'}>
+                      {a.concluyo_temario ? 'Concluyó temario' : 'Sin concluir temario'}
+                    </Typography>
+                    {a.concluyo_temario && a.fecha_conclusion_temario && (
+                      <Typography variant="caption" color="text.secondary">
+                        ({fmtFechaLarga(a.fecha_conclusion_temario)})
+                      </Typography>
+                    )}
+                  </Box>
+                  {a.nota_final && (
+                    <Chip
+                      label={`Nota: ${a.nota_final}`}
+                      size="small"
+                      color={NOTA_COLOR[a.nota_final] ?? 'default'}
+                    />
+                  )}
                 </Box>
               </CardContent>
             </Card>

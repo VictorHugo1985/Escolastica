@@ -90,7 +90,7 @@ export class UsersService {
         fecha_nacimiento: data.fecha_nacimiento ? new Date(data.fecha_nacimiento) : undefined,
         telefono: data.telefono || undefined,
         ci: data.ci || undefined,
-        foto_url: data.foto_url || undefined,
+        file_actualizado: data.file_actualizado ?? false,
         fecha_inscripcion: (data as any).fecha_inscripcion
           ? new Date((data as any).fecha_inscripcion)
           : undefined,
@@ -143,7 +143,7 @@ export class UsersService {
         ...(data.fecha_nacimiento && { fecha_nacimiento: new Date(data.fecha_nacimiento) }),
         ...(data.telefono !== undefined && { telefono: data.telefono || null }),
         ...(data.ci !== undefined && { ci: data.ci || null }),
-        ...(data.foto_url !== undefined && { foto_url: data.foto_url || null }),
+        ...(data.file_actualizado !== undefined && { file_actualizado: data.file_actualizado }),
         ...((data as any).fecha_inscripcion !== undefined && {
           fecha_inscripcion: (data as any).fecha_inscripcion
             ? new Date((data as any).fecha_inscripcion)

@@ -21,15 +21,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const updated = await prisma.inscripciones.update({
       where: { id: params.id },
       data: {
-        concluyo_temario_materia: dto.concluyo_temario_materia,
-        fecha_conclusion_temario: dto.fecha_conclusion_temario
-          ? new Date(dto.fecha_conclusion_temario)
-          : dto.concluyo_temario_materia ? new Date() : null,
+        ...(dto.concluyo_temario_materia !== undefined && {
+          concluyo_temario_materia: dto.concluyo_temario_materia,
+          fecha_conclusion_temario: dto.fecha_conclusion_temario
+            ? new Date(dto.fecha_conclusion_temario)
+            : dto.concluyo_temario_materia ? new Date() : null,
+        }),
+        ...(dto.nota_final !== undefined && { nota_final: dto.nota_final }),
         ...(dto.comentarios !== undefined && { comentarios: dto.comentarios }),
       },
     });
 
-    await auditLog({ usuario_id: actor.sub, accion: 'UPDATE', tabla_afectada: 'inscripciones', valor_anterior: { id: params.id, concluyo_temario_materia: before.concluyo_temario_materia }, valor_nuevo: { id: params.id, concluyo_temario_materia: dto.concluyo_temario_materia } });
+    await auditLog({ usuario_id: actor.sub, accion: 'UPDATE', tabla_afectada: 'inscripciones', valor_anterior: { id: params.id, concluyo_temario_materia: before.concluyo_temario_materia, nota_final: before.nota_final }, valor_nuevo: { id: params.id, concluyo_temario_materia: dto.concluyo_temario_materia, nota_final: dto.nota_final } });
     return json(updated);
   } catch (e) { return handleError(e); }
 }
