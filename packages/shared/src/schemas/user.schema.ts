@@ -1,11 +1,14 @@
 import { z } from 'zod';
 
-// Acepta "", null o undefined como "sin valor" y omite la validación de formato.
-// Usa union en lugar de preprocess para compatibilidad con zodResolver/Safari.
+// Acepta "", null o undefined como "sin valor". Solo valida formato si el valor es no-vacío.
 const optRef = (schema: z.ZodTypeAny) =>
-  z.union([z.literal(''), z.null(), z.undefined()] as const)
-    .transform((): undefined => undefined)
-    .or(schema) as z.ZodTypeAny;
+  z.string().optional().nullable().superRefine((v, ctx) => {
+    if (!v) return;
+    const result = schema.safeParse(v);
+    if (!result.success) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: result.error.errors[0]?.message ?? 'Valor inválido' });
+    }
+  });
 
 export const CreateUserSchema = z.object({
   email:             optRef(z.string().email('Email inválido')),
