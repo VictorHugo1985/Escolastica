@@ -107,12 +107,9 @@ function LoginForm() {
           >
             {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Ingresar'}
           </Button>
-          <Box sx={{ textAlign: 'center', mt: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Button variant="text" size="small" href="/forgot-password">
-              Olvidé mi contraseña
-            </Button>
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Button variant="text" size="small" href="/request-access" color="inherit">
-              ¿Primera vez? Solicitar acceso
+              Olvidé mi contraseña / Primer acceso
             </Button>
           </Box>
         </Box>

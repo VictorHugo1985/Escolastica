@@ -16,7 +16,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { api } from '@/lib/api';
 
 const Schema = z.object({
-  password: z.string().min(8, 'Mínimo 8 caracteres'),
+  password: z.string().min(6, 'Mínimo 6 caracteres'),
   confirm: z.string(),
 }).refine((d) => d.password === d.confirm, {
   message: 'Las contraseñas no coinciden',

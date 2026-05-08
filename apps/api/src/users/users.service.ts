@@ -137,10 +137,10 @@ export class UsersService {
     const updated = await this.prisma.usuarios.update({
       where: { id },
       data: {
-        ...(data.email && { email: data.email }),
+        ...(data.email !== undefined && { email: data.email || null }),
         ...(data.nombre_completo && { nombre_completo: data.nombre_completo }),
         ...(data.genero !== undefined && { genero: data.genero || null }),
-        ...(data.fecha_nacimiento && { fecha_nacimiento: new Date(data.fecha_nacimiento) }),
+        ...(data.fecha_nacimiento !== undefined && { fecha_nacimiento: data.fecha_nacimiento ? new Date(data.fecha_nacimiento) : null }),
         ...(data.telefono !== undefined && { telefono: data.telefono || null }),
         ...(data.ci !== undefined && { ci: data.ci || null }),
         ...(data.file_actualizado !== undefined && { file_actualizado: data.file_actualizado }),
@@ -149,8 +149,8 @@ export class UsersService {
             ? new Date((data as any).fecha_inscripcion)
             : null,
         }),
-        ...(data.fecha_recibimiento && {
-          fecha_recibimiento: new Date(data.fecha_recibimiento),
+        ...(data.fecha_recibimiento !== undefined && {
+          fecha_recibimiento: data.fecha_recibimiento ? new Date(data.fecha_recibimiento) : null,
         }),
         ...(data.estado !== undefined && { estado: data.estado as any }),
       },

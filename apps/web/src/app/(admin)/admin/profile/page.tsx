@@ -18,7 +18,7 @@ import { api } from '@/lib/api';
 
 const Schema = z.object({
   currentPassword: z.string().min(1, 'Ingresá tu contraseña actual'),
-  newPassword: z.string().min(8, 'Mínimo 8 caracteres'),
+  newPassword: z.string().min(6, 'Mínimo 6 caracteres'),
   confirm: z.string(),
 }).refine((d) => d.newPassword === d.confirm, {
   message: 'Las contraseñas no coinciden',

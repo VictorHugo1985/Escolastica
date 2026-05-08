@@ -27,6 +27,23 @@ export class EmailService {
     });
   }
 
+  async sendTokenCode(email: string, code: string): Promise<void> {
+    await this.sendEmail({
+      to: email,
+      subject: 'Tu código de acceso — Escolastica',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+          <h2 style="color:#1976d2;">Escolastica</h2>
+          <p>Tu código de acceso es:</p>
+          <p style="font-size:42px;font-weight:bold;letter-spacing:10px;color:#1976d2;text-align:center;padding:24px;background:#f5f5f5;border-radius:8px;">${code}</p>
+          <p>Ingresá este código en la pantalla de acceso para establecer tu contraseña.<br><strong>Válido por 1 hora.</strong></p>
+          <p style="color:#999;font-size:12px;">Si no solicitaste este código, ignorá este mensaje.</p>
+        </div>
+      `,
+      devLog: `[DEV] Access code for ${email}: ${code}`,
+    });
+  }
+
   async sendWelcomeCredentials(email: string, password: string): Promise<void> {
     await this.sendEmail({
       to: email,

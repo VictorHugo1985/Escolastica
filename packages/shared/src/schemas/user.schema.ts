@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
-// Convierte "" y null a undefined antes de validar, para que campos opcionales
-// del form (que envían "" cuando están vacíos) pasen sin error de formato.
+// Acepta "", null o undefined como "sin valor" y omite la validación de formato.
+// Usa union en lugar de preprocess para compatibilidad con zodResolver/Safari.
 const optRef = (schema: z.ZodTypeAny) =>
-  z.preprocess((v) => (v === '' || v == null ? undefined : v), schema.optional());
+  z.union([z.literal(''), z.null(), z.undefined()] as const)
+    .transform((): undefined => undefined)
+    .or(schema) as z.ZodTypeAny;
 
 export const CreateUserSchema = z.object({
   email:             optRef(z.string().email('Email inválido')),
@@ -31,11 +33,8 @@ export const UpdateInterviewSchema = z.object({
 });
 
 export const ChangePasswordSchema = z.object({
-  current_password: z.string().min(8),
-  new_password: z
-    .string()
-    .min(8)
-    .regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/, 'Requiere mayúscula, número y símbolo'),
+  current_password: z.string().min(1),
+  new_password: z.string().min(6, 'Mínimo 6 caracteres'),
 });
 
 export type CreateUserDto      = z.infer<typeof CreateUserSchema>;

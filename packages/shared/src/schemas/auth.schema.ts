@@ -12,12 +12,7 @@ export const ForgotPasswordSchema = z.object({
 
 export const ResetPasswordSchema = z.object({
   token: z.string().min(1),
-  newPassword: z
-    .string()
-    .min(8)
-    .regex(/[A-Z]/, 'Debe contener al menos una mayúscula')
-    .regex(/[0-9]/, 'Debe contener al menos un número')
-    .regex(/[^A-Za-z0-9]/, 'Debe contener al menos un símbolo'),
+  newPassword: z.string().min(6, 'Mínimo 6 caracteres'),
 });
 
 export type LoginDto = z.infer<typeof LoginSchema>;

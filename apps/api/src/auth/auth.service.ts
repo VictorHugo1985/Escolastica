@@ -195,22 +195,28 @@ export class AuthService {
     const tieneAcceso = user.roles.some((r) => ROLES_CON_ACCESO.includes(r.rol.nombre));
     if (!tieneAcceso) return null;
 
-    if (user.password_hash) {
-      // Cuenta ya activada → enviar reset en vez de credenciales nuevas
-      await this.forgotPassword({ email });
-      return { tipo: 'recuperacion' };
-    }
+    const tipo: 'nueva_activacion' | 'recuperacion' = user.password_hash ? 'recuperacion' : 'nueva_activacion';
 
-    // Primera activación → generar contraseña temporal y enviar bienvenida
-    const tempPassword = crypto.randomBytes(8).toString('base64url');
-    const passwordHash = await bcrypt.hash(tempPassword, BCRYPT_ROUNDS);
-
-    await this.prisma.usuarios.update({
-      where: { id: user.id },
-      data: { password_hash: passwordHash, must_change_password: true },
+    // Invalida tokens anteriores
+    await this.prisma.tokens_recuperacion.updateMany({
+      where: { usuario_id: user.id, used: false },
+      data: { used: true },
     });
 
-    await this.email.sendWelcomeCredentials(email, tempPassword);
-    return { tipo: 'nueva_activacion' };
+    // Código alfanumérico de 6 caracteres (sin caracteres ambiguos: I, O, 0, 1)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = crypto.randomBytes(6);
+    const code = Array.from(bytes).map((b) => chars[b % chars.length]).join('');
+
+    await this.prisma.tokens_recuperacion.create({
+      data: {
+        usuario_id: user.id,
+        token: code,
+        expires_at: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+      },
+    });
+
+    await this.email.sendTokenCode(email, code);
+    return { tipo };
   }
 }

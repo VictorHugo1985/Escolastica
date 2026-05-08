@@ -114,9 +114,9 @@ export default function UserFormPage() {
         if (v.ci !== undefined) payload.ci = v.ci || null;
         if (v.telefono !== undefined) payload.telefono = v.telefono || null;
         if (v.genero !== undefined) payload.genero = v.genero || null;
-        if (v.fecha_nacimiento) payload.fecha_nacimiento = v.fecha_nacimiento;
-        if (v.fecha_inscripcion) payload.fecha_inscripcion = v.fecha_inscripcion;
-        if (v.fecha_recibimiento) payload.fecha_recibimiento = v.fecha_recibimiento;
+        payload.fecha_nacimiento = v.fecha_nacimiento || null;
+        payload.fecha_inscripcion = v.fecha_inscripcion || null;
+        payload.fecha_recibimiento = v.fecha_recibimiento || null;
         payload.file_actualizado = !!v.file_actualizado;
         await api.patch(`/users/${id}`, payload);
         setSuccess('Perfil actualizado correctamente');
@@ -211,17 +211,21 @@ export default function UserFormPage() {
 
               <Grid item xs={12} sm={6}>
                 <TextField label="Correo electrónico" type="text" fullWidth
+                  inputProps={{ autoComplete: 'off', autoCorrect: 'off', spellCheck: false }}
                   error={!!errors.email}
                   helperText={errors.email?.message as string}
                   {...register('email')} />
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField label="CI" fullWidth {...register('ci')} />
+                <TextField label="CI" fullWidth
+                  inputProps={{ autoComplete: 'off' }}
+                  {...register('ci')} />
               </Grid>
 
               <Grid item xs={12} sm={6}>
                 <TextField label="Teléfono" fullWidth placeholder="Ej: 72345678"
+                  inputProps={{ autoComplete: 'off', inputMode: 'numeric' }}
                   error={!!errors.telefono}
                   helperText={errors.telefono?.message as string}
                   {...register('telefono')} />
