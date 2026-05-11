@@ -1,60 +1,65 @@
 # Research: Ficha de Inscripción — Nota Final y Cierre de Clase
 
-**Branch**: `028-ficha-nota-final-clase` | **Date**: 2026-05-04
+**Branch**: `028-ficha-nota-final-clase` | **Date**: 2026-05-09 (actualizado)
 
-## Hallazgos del Código Existente
+> **Nota**: Este documento reemplaza la versión del 2026-05-04. La spec fue modificada para soportar múltiples notas finales tipificadas por inscripción, en lugar de un campo único `nota_final`.
 
-### Estado actual del backend
+## Estado actual del código
 
-| Ruta API                                        | Método | Estado       | Relevancia                                   |
-|-------------------------------------------------|--------|--------------|----------------------------------------------|
-| `PATCH /api/clases/[id]/status`                 | PATCH  | Implementado | Cambia `estado` de la clase. Requiere rol `Escolastico`. Registra auditoría. |
-| `PATCH /api/inscripciones/[id]/conclusion`      | PATCH  | Implementado | Actualiza `concluyo_temario_materia` y `fecha_conclusion_temario`. No tiene `nota_final`. |
-| `GET /api/clases/[id]/inscripciones`            | GET    | Implementado | Devuelve lista de inscripciones de la clase. |
+### Lo ya implementado (en esta rama)
 
-### Estado actual del frontend
+| Componente | Estado | Notas |
+|---|---|---|
+| Campo `nota_final EstadoNota?` en `inscripciones` | **Implementado — a reemplazar** | Migración `20260504000000` |
+| `PATCH /api/inscripciones/:id/conclusion` acepta `nota_final` | **Implementado — a modificar** | Quitar soporte a `nota_final` |
+| Select inline de `nota_final` en DataGrid `/admin/clases/:id` | **Implementado — a reemplazar** | Reemplazar con diálogo multi-nota |
+| Botón "Finalizar clase" + Dialog de confirmación | **Implementado — sin cambio** | ✓ |
+| `PATCH /api/clases/:id/status` | **Implementado — sin cambio** | ✓ |
 
-La página `/admin/clases/[id]/page.tsx` ya tiene:
-- Columna `concluyo_temario_materia` como Checkbox en el DataGrid con llamada a `toggleConclusion()`
-- Chip de estado de la clase con colores para `Activa`, `Finalizada`, `Inactiva`
-- Llamada al endpoint `/conclusion` via `api.patch`
-- **Falta**: columna `nota_final`, botón "Finalizar clase" y su confirmación
+### Lo pendiente de implementar
 
-### Estado actual del schema
-
-- `inscripciones` tiene `concluyo_temario_materia` (Boolean) y `fecha_conclusion_temario` (Date?) — ya en DB
-- `inscripciones` **NO tiene** `nota_final` — requiere migración
-- `EstadoNota` enum ya existe: `Sobresaliente | Solido | Aprobado | Reprobado`
-- `EstadoClase` enum ya tiene `Finalizada` — no requiere migración de enum
+- Nueva tabla `notas_finales_inscripcion` con enum `TipoNotaFinal`
+- Endpoints `POST` y `DELETE` para `/api/inscripciones/:id/notas-finales`
+- Diálogo de gestión de notas finales en la UI
+- Inclusión de `notas_finales` en la respuesta de `GET /api/clases/:id`
 
 ## Decisiones de Diseño
 
-### Decisión 1: Ubicación de `nota_final`
+### Decisión 1: Tabla separada `notas_finales_inscripcion`
 
-- **Decisión**: Agregar campo `nota_final` (nullable, `EstadoNota`) directamente en `inscripciones`
-- **Rationale**: La nota final es un atributo de la inscripción (relación alumno-clase), no una evaluación parcial con tipo propio. El modelo `notas` es para evaluaciones tipificadas (examen, práctica). Almacenar en `inscripciones` es consistente con `concluyo_temario_materia` que es otro atributo de cierre de la inscripción.
-- **Alternativas descartadas**: Agregar un registro en `notas` con `tipo_evaluacion = 'Final'` — descartado porque requeriría lógica de unicidad y consultas adicionales para un dato que conceptualmente pertenece a la inscripción.
+- **Decisión**: Crear tabla `notas_finales_inscripcion` con FK a `inscripciones`, enum `TipoNotaFinal`, y `valor EstadoNota`. Eliminar campo `nota_final` de `inscripciones`.
+- **Rationale**: El campo único no permite diferenciar entre tipos de evaluación final. La tabla separada refleja la multiplicidad semántica (una inscripción puede tener nota teórica Y práctica). Unicidad en `(inscripcion_id, tipo_nota)` asegura integridad sin lógica adicional.
+- **Alternativas descartadas**:
+  - Mantener `nota_final` único + agregar notas adicionales en tabla `notas` — contamina `notas` con datos de cierre que no son evaluaciones parciales.
+  - Columnas separadas por tipo (`nota_teorica`, `nota_practica`…) — no escalable si se agregan tipos futuros.
 
-### Decisión 2: Endpoint para `nota_final`
+### Decisión 2: Enum `TipoNotaFinal` en Prisma/PostgreSQL
 
-- **Decisión**: Extender el endpoint existente `PATCH /api/inscripciones/[id]/conclusion` para aceptar también `nota_final`
-- **Rationale**: La nota final y la conclusión de temario son ambos atributos de cierre de la inscripción, tienen la misma audiencia de actores (Escolástico e Instructor titular), y compartir el mismo endpoint simplifica el cliente.
-- **Alternativas descartadas**: Crear un endpoint nuevo `/nota-final` — innecesario, fragmenta la lógica de cierre.
+- **Decisión**: Definir `TipoNotaFinal` como enum de PostgreSQL con valores: `Nota_Teorica`, `Nota_Practica`, `Examen_Final`, `Trabajo_Escrito`.
+- **Rationale**: Enums de PostgreSQL garantizan integridad a nivel de DB. Consistente con el patrón ya establecido en el proyecto (`EstadoNota`, `EstadoClase`, etc.). Los valores usan snake_case con mayúscula inicial para evitar espacios en el nombre del enum.
+- **Alternativas descartadas**: String libre con CHECK constraint — no aprovecha el ecosistema Prisma ni el tipado TypeScript generado.
 
-### Decisión 3: Acción "Finalizar clase" en UI
+### Decisión 3: Endpoints REST dedicados para notas finales
 
-- **Decisión**: Agregar botón "Finalizar clase" en la vista `/admin/clases/[id]` con diálogo de confirmación. El botón llama al endpoint `PATCH /api/clases/[id]/status` con `{ estado: 'Finalizada' }`.
-- **Rationale**: El endpoint backend ya existe y es correcto. Solo falta el elemento de UI. El diálogo de confirmación es obligatorio por la especificación (FR-007) ya que es una acción irreversible.
-- **Alternativas descartadas**: Crear un endpoint dedicado `finalizar` — el endpoint `status` ya es genérico y suficiente.
+- **Decisión**: Crear `POST /api/inscripciones/:id/notas-finales` y `DELETE /api/inscripciones/:id/notas-finales/:notaId` como rutas Next.js independientes.
+- **Rationale**: Las operaciones de agregar/eliminar notas son acciones discretas con lógica de negocio propia (validar unicidad de tipo, auditar por separado). Separarlas del endpoint `conclusion` mantiene responsabilidad única.
+- **Alternativas descartadas**: Extender PATCH `conclusion` — mezclaría operaciones de diferente semántica (actualización de campos escalares vs. gestión de colección).
 
-### Decisión 4: Edición de `nota_final` en UI
+### Decisión 4: UI — Diálogo por inscripción
 
-- **Decisión**: Agregar columna `nota_final` en el DataGrid con un Select inline (similar al Checkbox de temario existente). Al cambiar el valor se llama inmediatamente al endpoint `conclusion`.
-- **Rationale**: Patrón consistente con la columna de conclusión de temario ya implementada. Evita formularios adicionales.
-- **Alternativas descartadas**: Modal de edición — overhead innecesario para un solo campo.
+- **Decisión**: En la columna del DataGrid, mostrar las notas como chips compactos (`Teórica: Aprobado`) + botón icono que abre un diálogo. El diálogo muestra la lista, permite agregar (Select de tipo + Select de valor + botón Agregar) y eliminar (botón ×) notas.
+- **Rationale**: El DataGrid no soporta bien listas dinámicas inline. El diálogo permite operaciones CRUD sin recargar la fila. Es usable en mobile (Dialog fullscreen en xs). La columna sigue siendo informativa con los chips.
+- **Alternativas descartadas**: Select inline multi-valor — no soporta tipo+valor por nota. Subfilas expandibles (MUI DataGrid Pro feature) — no disponible en tier gratuito.
+
+### Decisión 5: Inclusión de `notas_finales` en la carga de la clase
+
+- **Decisión**: Extender el include de Prisma en `GET /api/clases/:id` para incluir `notas_finales: true` dentro de cada inscripción.
+- **Rationale**: La UI carga toda la clase de una vez (`loadClase()`). Incluir las notas en ese fetch evita N+1 requests adicionales al renderizar la lista de inscripciones.
+- **Alternativas descartadas**: Fetch separado por inscripción al abrir el diálogo — introduce latencia perceptible y complejidad de estado.
 
 ## Impacto en Reglas del Sistema
 
-- **Auditoría**: El endpoint `conclusion` debe registrar `nota_final` en `logs_auditoria` junto con el valor anterior. El endpoint `status` ya registra auditoría. ✓
-- **Autorización**: `nota_final` editable por `Escolastico` e `Instructor` titular. Finalizar clase solo por `Escolastico`. Consistente con lógica existente en ambos endpoints. ✓
-- **Mobile-First**: Los controles de nota final (Select) y el botón de finalizar deben ser usables en móvil. El DataGrid de MUI es responsive. ✓
+- **Auditoría**: POST agrega a `logs_auditoria` con `accion: 'CREATE'`, `tabla_afectada: 'notas_finales_inscripcion'`. DELETE registra con `accion: 'DELETE'`. ✓
+- **Autorización**: Mismos permisos que antes — `Escolastico` o instructor titular. ✓
+- **Mobile-First**: Dialog usa `fullScreen` en breakpoint `xs`. Chips en DataGrid son compactos. ✓
+- **Spec 003**: La nueva entidad `notas_finales_inscripcion` debe añadirse al Diccionario de Datos Maestro. Pendiente de actualización en Spec 003. ⚠️

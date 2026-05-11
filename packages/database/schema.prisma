@@ -54,6 +54,13 @@ enum EstadoNota {
   Reprobado
 }
 
+enum TipoNotaFinal {
+  Nota_Teorica
+  Nota_Practica
+  Examen_Final
+  Trabajo_Escrito
+}
+
 enum TipoSesion {
   Clase
   Examen
@@ -257,17 +264,17 @@ model inscripciones {
   motivo_baja               MotivoBaja?
   estado                    EstadoInscripcion @default(Activo)
   concluyo_temario_materia  Boolean           @default(false)
-  nota_final                EstadoNota?
   fecha_conclusion_temario  DateTime?         @db.Date
   comentarios               String?           @db.Text
   created_at                DateTime          @default(now()) @db.Timestamptz(6)
   updated_at                DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
 
   // Relaciones
-  usuario     usuarios      @relation(fields: [usuario_id], references: [id])
-  clase       clases        @relation(fields: [clase_id], references: [id])
-  asistencias asistencias[]
-  notas       notas[]
+  usuario        usuarios                    @relation(fields: [usuario_id], references: [id])
+  clase          clases                      @relation(fields: [clase_id], references: [id])
+  asistencias    asistencias[]
+  notas          notas[]
+  notas_finales  notas_finales_inscripcion[]
 
   @@unique([usuario_id, clase_id])
 }
@@ -297,6 +304,20 @@ model notas {
 
   // Relaciones
   inscripcion inscripciones @relation(fields: [inscripcion_id], references: [id])
+}
+
+model notas_finales_inscripcion {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inscripcion_id String        @db.Uuid
+  tipo_nota      TipoNotaFinal
+  valor          EstadoNota
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  inscripcion inscripciones @relation(fields: [inscripcion_id], references: [id], onDelete: Cascade)
+
+  @@unique([inscripcion_id, tipo_nota])
 }
 
 // --- AUDITORÍA ---

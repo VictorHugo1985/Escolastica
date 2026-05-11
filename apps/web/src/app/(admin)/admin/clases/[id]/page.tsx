@@ -38,16 +38,32 @@ import SchoolIcon from '@mui/icons-material/School';
 import SearchIcon from '@mui/icons-material/Search';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
+type TipoNotaFinal = 'Nota_Teorica' | 'Nota_Practica' | 'Examen_Final' | 'Trabajo_Escrito';
+type EstadoNota = 'Sobresaliente' | 'Solido' | 'Aprobado' | 'Reprobado';
+
+const TIPO_NOTA_LABELS: Record<TipoNotaFinal, string> = {
+  Nota_Teorica: 'Nota Teórica',
+  Nota_Practica: 'Nota Práctica',
+  Examen_Final: 'Examen Final',
+  Trabajo_Escrito: 'Trabajo Escrito',
+};
+const TIPOS_NOTA = Object.keys(TIPO_NOTA_LABELS) as TipoNotaFinal[];
+const ESTADOS_NOTA: EstadoNota[] = ['Sobresaliente', 'Solido', 'Aprobado', 'Reprobado'];
+
+interface NotaFinal { id: string; tipo_nota: TipoNotaFinal; valor: EstadoNota }
 interface Usuario { id: string; nombre_completo: string; email: string }
 interface Inscripcion {
   id: string;
   usuario_id: string;
   fecha_inscripcion: string;
   concluyo_temario_materia: boolean;
-  nota_final: 'Sobresaliente' | 'Solido' | 'Aprobado' | 'Reprobado' | null;
+  notas_finales: NotaFinal[];
   estado: string;
   usuario: Usuario;
 }
@@ -66,7 +82,6 @@ interface Clase {
 }
 
 const MOTIVOS = ['Ausencia', 'Laboral', 'Personal', 'Desconocido'] as const;
-const NOTAS_FINALES = ['Sobresaliente', 'Solido', 'Aprobado', 'Reprobado'] as const;
 
 export default function ClaseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -85,6 +100,13 @@ export default function ClaseDetailPage() {
   const [givingBaja, setGivingBaja] = useState(false);
   const [iniciandoSesion, setIniciandoSesion] = useState(false);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
+
+  // Notas finales dialog
+  const [notasTarget, setNotasTarget] = useState<Inscripcion | null>(null);
+  const [notasTipo, setNotasTipo] = useState<TipoNotaFinal>('Nota_Teorica');
+  const [notasValor, setNotasValor] = useState<EstadoNota>('Aprobado');
+  const [notasAdding, setNotasAdding] = useState(false);
+  const [notasError, setNotasError] = useState('');
 
   // Inscribir dialog
   const [addOpen, setAddOpen] = useState(false);
@@ -156,15 +178,35 @@ export default function ClaseDetailPage() {
     }
   }
 
-  // --- Nota final ---
-  async function updateNotaFinal(insc: Inscripcion, nota: string | null) {
+  // --- Notas finales ---
+  async function addNota() {
+    if (!notasTarget) return;
+    setNotasAdding(true);
+    setNotasError('');
     try {
-      await api.patch(`/inscripciones/${insc.id}/conclusion`, {
-        nota_final: nota || null,
-      });
-      await loadClase();
+      await api.post(`/inscripciones/${notasTarget.id}/notas-finales`, { tipo_nota: notasTipo, valor: notasValor });
+      const { data } = await api.get(`/clases/${id}`);
+      setClase(data);
+      const updated = (data.inscripciones as Inscripcion[]).find((i) => i.id === notasTarget.id);
+      if (updated) setNotasTarget(updated);
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Error al actualizar nota final');
+      const status = err?.response?.status;
+      setNotasError(status === 409 ? 'Ya existe una nota de ese tipo para este alumno' : (err?.response?.data?.message ?? 'Error al agregar nota'));
+    } finally {
+      setNotasAdding(false);
+    }
+  }
+
+  async function deleteNota(notaId: string) {
+    if (!notasTarget) return;
+    try {
+      await api.delete(`/inscripciones/${notasTarget.id}/notas-finales/${notaId}`);
+      const { data } = await api.get(`/clases/${id}`);
+      setClase(data);
+      const updated = (data.inscripciones as Inscripcion[]).find((i) => i.id === notasTarget.id);
+      if (updated) setNotasTarget(updated);
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? 'Error al eliminar nota');
     }
   }
 
@@ -259,23 +301,26 @@ export default function ClaseDetailPage() {
       ),
     },
     {
-      field: 'nota_final',
-      headerName: 'Nota final',
-      width: 170,
-      minWidth: 140,
+      field: 'notas_finales',
+      headerName: 'Notas finales',
+      width: 230,
+      minWidth: 160,
       sortable: false,
-      renderCell: ({ row }) => (
-        <Select
-          size="small"
-          displayEmpty
-          value={(row as Inscripcion).nota_final ?? ''}
-          onChange={(e) => updateNotaFinal(row as Inscripcion, e.target.value || null)}
-          sx={{ fontSize: 13, minWidth: 130 }}
-        >
-          <MenuItem value=""><em>Sin nota</em></MenuItem>
-          {NOTAS_FINALES.map((n) => <MenuItem key={n} value={n}>{n}</MenuItem>)}
-        </Select>
-      ),
+      renderCell: ({ row }) => {
+        const insc = row as Inscripcion;
+        return (
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', py: 0.5 }}>
+            {insc.notas_finales.map((n) => (
+              <Chip key={n.id} size="small" label={`${TIPO_NOTA_LABELS[n.tipo_nota]}: ${n.valor}`} sx={{ fontSize: 11 }} />
+            ))}
+            <Tooltip title="Gestionar notas finales">
+              <IconButton size="small" onClick={() => { setNotasTarget(insc); setNotasError(''); }}>
+                <EditIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        );
+      },
     },
     {
       field: 'actions',
@@ -417,10 +462,12 @@ export default function ClaseDetailPage() {
           rows={inscripciones}
           columns={columns}
           autoHeight
+          getRowHeight={() => 'auto'}
           disableRowSelectionOnClick
           pageSizeOptions={[25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
           localeText={{ noRowsLabel: 'Sin alumnos inscritos' }}
+          sx={{ '& .MuiDataGrid-cell': { alignItems: 'center', py: 0.5 } }}
         />
       </Box>
 
@@ -474,6 +521,53 @@ export default function ClaseDetailPage() {
           <Button variant="contained" color="error" onClick={finalizarClase}>
             Confirmar
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog: Notas finales */}
+      <Dialog open={!!notasTarget} onClose={() => setNotasTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Notas finales — {notasTarget?.usuario.nombre_completo}</DialogTitle>
+        <DialogContent>
+          {notasTarget?.notas_finales.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontStyle: 'italic' }}>
+              Sin notas registradas.
+            </Typography>
+          )}
+          {notasTarget?.notas_finales.map((n) => (
+            <Box key={n.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <Chip size="small" label={`${TIPO_NOTA_LABELS[n.tipo_nota]}: ${n.valor}`} sx={{ flex: 1 }} />
+              <IconButton size="small" color="error" onClick={() => deleteNota(n.id)}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          ))}
+          <Box sx={{ mt: 2, display: 'flex', gap: 1, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>Tipo</InputLabel>
+              <Select value={notasTipo} label="Tipo" onChange={(e) => setNotasTipo(e.target.value as TipoNotaFinal)}>
+                {TIPOS_NOTA.map((t) => <MenuItem key={t} value={t}>{TIPO_NOTA_LABELS[t]}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <InputLabel>Valor</InputLabel>
+              <Select value={notasValor} label="Valor" onChange={(e) => setNotasValor(e.target.value as EstadoNota)}>
+                {ESTADOS_NOTA.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={notasAdding ? <CircularProgress size={14} color="inherit" /> : <AddIcon />}
+              disabled={notasAdding}
+              onClick={addNota}
+            >
+              Agregar
+            </Button>
+          </Box>
+          {notasError && <Alert severity="error" sx={{ mt: 1.5 }} onClose={() => setNotasError('')}>{notasError}</Alert>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNotasTarget(null)}>Cerrar</Button>
         </DialogActions>
       </Dialog>
 

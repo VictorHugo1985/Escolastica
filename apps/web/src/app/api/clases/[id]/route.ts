@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         materia: true,
         instructor: { select: { id: true, nombre_completo: true, email: true } },
         horarios: { include: { aula: true }, orderBy: { dia_semana: 'asc' } },
-        inscripciones: { where: { estado: 'Activo' }, include: { usuario: { select: { id: true, nombre_completo: true, email: true } } } },
+        inscripciones: { where: { estado: 'Activo' }, include: { usuario: { select: { id: true, nombre_completo: true, email: true } }, notas_finales: { select: { id: true, tipo_nota: true, valor: true }, orderBy: { created_at: 'asc' } } } },
         _count: { select: { sesiones: true } },
       },
     });

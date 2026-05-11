@@ -27,12 +27,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             ? new Date(dto.fecha_conclusion_temario)
             : dto.concluyo_temario_materia ? new Date() : null,
         }),
-        ...(dto.nota_final !== undefined && { nota_final: dto.nota_final }),
-        ...(dto.comentarios !== undefined && { comentarios: dto.comentarios }),
+...(dto.comentarios !== undefined && { comentarios: dto.comentarios }),
       },
     });
 
-    await auditLog({ usuario_id: actor.sub, accion: 'UPDATE', tabla_afectada: 'inscripciones', valor_anterior: { id: params.id, concluyo_temario_materia: before.concluyo_temario_materia, nota_final: before.nota_final }, valor_nuevo: { id: params.id, concluyo_temario_materia: dto.concluyo_temario_materia, nota_final: dto.nota_final } });
+    await auditLog({ usuario_id: actor.sub, accion: 'UPDATE', tabla_afectada: 'inscripciones', valor_anterior: { id: params.id, concluyo_temario_materia: before.concluyo_temario_materia }, valor_nuevo: { id: params.id, concluyo_temario_materia: dto.concluyo_temario_materia } });
     return json(updated);
   } catch (e) { return handleError(e); }
 }

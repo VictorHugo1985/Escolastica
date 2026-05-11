@@ -10,6 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { estado } = await req.json();
     const before = await prisma.clases.findUnique({ where: { id: params.id } });
     if (!before) throw new ApiError('Clase no encontrada', 404);
+    if (estado === 'Finalizada' && before.estado !== 'Activa') throw new ApiError('Solo se puede finalizar una clase en estado Activa', 400);
     const updated = await prisma.clases.update({ where: { id: params.id }, data: { estado } });
     await auditLog({ usuario_id: actor.sub, accion: 'UPDATE', tabla_afectada: 'clases', valor_anterior: { id: params.id, estado: before.estado }, valor_nuevo: { id: params.id, estado } });
     return json(updated);

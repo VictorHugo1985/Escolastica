@@ -13,6 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       include: {
         clase: { include: { materia: { select: { id: true, nombre: true } } } },
         asistencias: { select: { estado: true, sesion: { select: { fecha: true, tipo: true, tema: { select: { titulo: true } } } } }, orderBy: { sesion: { fecha: 'desc' } } },
+        notas_finales: { select: { tipo_nota: true, valor: true }, orderBy: { created_at: 'asc' } },
       },
     });
 
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return {
         inscripcion_id: insc.id,
         clase: { id: insc.clase.id, codigo: insc.clase.codigo, estado: insc.clase.estado, materia: insc.clase.materia },
-        nota_final: insc.nota_final,
+        notas_finales: insc.notas_finales,
         concluyo_temario: insc.concluyo_temario_materia,
         fecha_conclusion_temario: insc.fecha_conclusion_temario,
         total_sesiones: total, presentes,

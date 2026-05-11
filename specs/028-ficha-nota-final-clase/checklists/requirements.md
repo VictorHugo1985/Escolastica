@@ -1,7 +1,7 @@
 # Specification Quality Checklist: Ficha de Inscripción — Nota Final y Cierre de Clase
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-05-04
+**Created**: 2026-05-09
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,7 +31,8 @@
 
 ## Notes
 
-- Todos los ítems pasan. La especificación está lista para `/speckit.clarify` o `/speckit.plan`.
-- Se identificó que `concluyo_temario_materia` y `fecha_conclusion_temario` ya existen en el modelo de datos; el trabajo consiste en exponerlos en la UI.
-- El campo `nota_final` requiere migración de base de datos (nuevo campo en `inscripciones`).
-- El cierre de clase (`Finalizada`) no requiere migración ya que el enum `EstadoClase` ya incluye ese valor.
+- Tipos de nota confirmados (FR-003): `Nota Teórica`, `Nota Práctica`, `Examen Final`, `Trabajo Escrito`.
+- La nueva entidad `notas_finales_inscripcion` requiere migración de base de datos y debe referenciarse en Spec 003.
+- El campo `nota_final` único en `inscripciones` fue reemplazado por la relación `notas_finales` con tabla `notas_finales_inscripcion`.
+- El cierre de clase (`Finalizada`) no requiere migración; el enum `EstadoClase` ya incluye ese valor.
+- Implementación completa. Migración pendiente de aplicar en DB (ejecutar `npx prisma migrate deploy` desde `packages/database/` cuando la conexión a Supabase esté disponible).
