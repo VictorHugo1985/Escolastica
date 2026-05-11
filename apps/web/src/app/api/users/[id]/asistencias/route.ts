@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       where: { usuario_id: params.id, ...(claseId && { clase_id: claseId }) },
       include: {
         clase: { include: { materia: { select: { id: true, nombre: true } } } },
-        asistencias: { select: { estado: true, sesion: { select: { fecha: true, tipo: true, tema: { select: { titulo: true } } } } }, orderBy: { sesion: { fecha: 'desc' } } },
+        asistencias: { select: { estado: true, sesion: { select: { fecha: true, tipo: true, temas: { include: { tema: { select: { titulo: true } } } } } } }, orderBy: { sesion: { fecha: 'desc' } } },
         notas_finales: { select: { tipo_nota: true, valor: true }, orderBy: { created_at: 'asc' } },
       },
     });
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         ausentes: insc.asistencias.filter((a) => a.estado === 'Ausente').length,
         licencias: insc.asistencias.filter((a) => a.estado === 'Licencia').length,
         porcentaje: total > 0 ? Math.round((presentes / total) * 100) : 0,
-        ultimas_sesiones: insc.asistencias.slice(0, 10).reverse().map((a) => ({ fecha: a.sesion.fecha, estado: a.estado, tipo: a.sesion.tipo, tema: a.sesion.tema?.titulo ?? null })),
+        ultimas_sesiones: insc.asistencias.slice(0, 10).reverse().map((a) => ({ fecha: a.sesion.fecha, estado: a.estado, tipo: a.sesion.tipo, tema: a.sesion.temas.map((t) => t.tema.titulo).join(', ') || null })),
       };
     }));
   } catch (e) { return handleError(e); }

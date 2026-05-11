@@ -47,33 +47,8 @@ enum EstadoAsistencia {
   Licencia
 }
 
-enum EstadoNota {
-  Sobresaliente
-  Solido
-  Aprobado
-  Reprobado
-}
-
-enum TipoNotaFinal {
-  Nota_Teorica
-  Nota_Practica
-  Examen_Final
-  Trabajo_Escrito
-}
-
-enum TipoSesion {
-  Clase
-  Examen
-  Practica
-  Repaso
-}
-
-enum MotivoBaja {
-  Ausencia
-  Laboral
-  Personal
-  Desconocido
-}
+// --- ENUMS CONFIGURABLES (migrados a tabla dinámica) ---
+// TipoSesion, EstadoNota, TipoNotaFinal, MotivoBaja eliminados — ver enum_categorias / enum_valores
 
 // --- MODELOS DE IDENTIDAD ---
 
@@ -181,8 +156,8 @@ model temas {
   updated_at  DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
 
   // Relaciones
-  materia  materias   @relation(fields: [materia_id], references: [id])
-  sesiones sesiones[]
+  materia  materias       @relation(fields: [materia_id], references: [id])
+  sesiones sesion_temas[]
 }
 
 // --- MODELOS DE INFRAESTRUCTURA ---
@@ -242,15 +217,23 @@ model sesiones {
   id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   clase_id    String     @db.Uuid
   fecha       DateTime   @db.Date
-  tipo        TipoSesion
-  tema_id     String?    @db.Uuid
+  tipo        String     @db.VarChar(50)
   comentarios String?    @db.Text
   created_at  DateTime   @default(now()) @db.Timestamptz(6)
 
   // Relaciones
-  clase       clases        @relation(fields: [clase_id], references: [id])
-  tema        temas?        @relation(fields: [tema_id], references: [id])
+  clase       clases         @relation(fields: [clase_id], references: [id])
+  temas       sesion_temas[]
   asistencias asistencias[]
+}
+
+model sesion_temas {
+  sesion_id String   @db.Uuid
+  tema_id   String   @db.Uuid
+  sesion    sesiones @relation(fields: [sesion_id], references: [id], onDelete: Cascade)
+  tema      temas    @relation(fields: [tema_id], references: [id])
+
+  @@id([sesion_id, tema_id])
 }
 
 // --- SEGUIMIENTO Y EVALUACIÓN ---
@@ -261,7 +244,7 @@ model inscripciones {
   clase_id                  String            @db.Uuid
   fecha_inscripcion         DateTime          @default(now()) @db.Timestamptz(6)
   fecha_baja                DateTime?         @db.Timestamptz(6)
-  motivo_baja               MotivoBaja?
+  motivo_baja               String?           @db.VarChar(50)
   estado                    EstadoInscripcion @default(Activo)
   concluyo_temario_materia  Boolean           @default(false)
   fecha_conclusion_temario  DateTime?         @db.Date
@@ -297,7 +280,7 @@ model asistencias {
 model notas {
   id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   inscripcion_id  String     @db.Uuid
-  nota            EstadoNota
+  nota            String     @db.VarChar(50)
   tipo_evaluacion String     @db.VarChar(100)
   created_at      DateTime   @default(now()) @db.Timestamptz(6)
   updated_at      DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
@@ -309,8 +292,8 @@ model notas {
 model notas_finales_inscripcion {
   id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   inscripcion_id String        @db.Uuid
-  tipo_nota      TipoNotaFinal
-  valor          EstadoNota
+  tipo_nota      String        @db.VarChar(50)
+  valor          String        @db.VarChar(50)
   created_at     DateTime      @default(now()) @db.Timestamptz(6)
   updated_at     DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
 
@@ -318,6 +301,32 @@ model notas_finales_inscripcion {
   inscripcion inscripciones @relation(fields: [inscripcion_id], references: [id], onDelete: Cascade)
 
   @@unique([inscripcion_id, tipo_nota])
+}
+
+// --- CONFIGURACIÓN DE ENUMERACIONES DINÁMICAS ---
+
+model enum_categorias {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre      String         @unique @db.VarChar(50)
+  etiqueta    String         @db.VarChar(100)
+  descripcion String?        @db.VarChar(255)
+  created_at  DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  valores     enum_valores[]
+}
+
+model enum_valores {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoria_id String          @db.Uuid
+  codigo       String          @db.VarChar(50)
+  etiqueta     String          @db.VarChar(100)
+  activo       Boolean         @default(true)
+  orden        Int             @default(0)
+  created_at   DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  categoria    enum_categorias @relation(fields: [categoria_id], references: [id])
+
+  @@unique([categoria_id, codigo])
 }
 
 // --- AUDITORÍA ---

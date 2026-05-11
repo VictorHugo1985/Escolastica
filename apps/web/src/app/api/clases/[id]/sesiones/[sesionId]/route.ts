@@ -5,7 +5,7 @@ import { requireAuth, requireRole, json, handleError, ApiError } from '@/lib/rou
 export async function GET(req: NextRequest, { params }: { params: { id: string; sesionId: string } }) {
   try {
     await requireAuth(req);
-    const sesion = await prisma.sesiones.findUnique({ where: { id: params.sesionId }, include: { tema: { select: { id: true, titulo: true } } } });
+    const sesion = await prisma.sesiones.findUnique({ where: { id: params.sesionId }, include: { temas: { include: { tema: { select: { id: true, titulo: true } } } } } });
     if (!sesion) throw new ApiError('Sesión no encontrada', 404);
     return json(sesion);
   } catch (e) { return handleError(e); }
@@ -15,15 +15,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try {
     await requireAuth(req);
     const dto = await req.json();
-    return json(await prisma.sesiones.update({
+    const temaIds: string[] | undefined = dto.tema_ids !== undefined
+      ? (Array.isArray(dto.tema_ids) ? dto.tema_ids : (dto.tema_ids ? [dto.tema_ids] : []))
+      : undefined;
+    const sesion = await prisma.sesiones.update({
       where: { id: params.sesionId },
       data: {
         ...(dto.tipo !== undefined && { tipo: dto.tipo }),
-        ...(dto.tema_id !== undefined && { tema_id: dto.tema_id }),
         ...(dto.comentarios !== undefined && { comentarios: dto.comentarios }),
         ...(dto.fecha !== undefined && { fecha: new Date(dto.fecha) }),
+        ...(temaIds !== undefined && {
+          temas: { deleteMany: {}, create: temaIds.map((id) => ({ tema_id: id })) },
+        }),
       },
-    }));
+      include: { temas: { include: { tema: { select: { id: true, titulo: true } } } } },
+    });
+    return json(sesion);
   } catch (e) { return handleError(e); }
 }
 

@@ -26,7 +26,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
 type Estado = 'Presente' | 'Ausente' | 'Licencia';
-type TipoSesion = 'Clase' | 'Examen' | 'Practica' | 'Repaso';
+interface EnumValor { codigo: string; etiqueta: string }
 
 interface AlumnoRow {
   inscripcion_id: string;
@@ -38,9 +38,9 @@ interface AlumnoRow {
 interface SesionInfo {
   id: string;
   fecha: string;
-  tipo: TipoSesion;
+  tipo: string;
   comentarios: string | null;
-  tema: { id: string; titulo: string } | null;
+  temas: { tema: { id: string; titulo: string } }[];
 }
 
 interface ClaseInfo {
@@ -56,13 +56,6 @@ interface Tema {
 }
 
 const ESTADOS: Estado[] = ['Ausente', 'Presente', 'Licencia'];
-const TIPOS: TipoSesion[] = ['Clase', 'Examen', 'Practica', 'Repaso'];
-const TIPOS_LABEL: Record<TipoSesion, string> = {
-  Clase: 'Clase',
-  Examen: 'Examen',
-  Practica: 'Práctica',
-  Repaso: 'Repaso',
-};
 
 const estadoColor: Record<Estado, 'success' | 'error' | 'warning'> = {
   Presente: 'success',
@@ -96,10 +89,11 @@ export default function PaseListaSesionPage() {
   const [successSesion, setSuccessSesion] = useState(false);
   const [error, setError] = useState('');
 
-  const [tipo, setTipo] = useState<TipoSesion>('Clase');
+  const [tipo, setTipo] = useState('');
+  const [tipoSesionOpts, setTipoSesionOpts] = useState<EnumValor[]>([]);
   const [comentarios, setComentarios] = useState('');
   const [fechaEdit, setFechaEdit] = useState('');
-  const [temaId, setTemaId] = useState<string>('');
+  const [temaIds, setTemaIds] = useState<string[]>([]);
   const [temas, setTemas] = useState<Tema[]>([]);
 
   const rowsRef = useRef<AlumnoRow[]>([]);
@@ -134,13 +128,22 @@ export default function PaseListaSesionPage() {
     api.get(`/clases/${claseId}/sesiones/${sesionId}`)
       .then(({ data }) => {
         setSesion(data);
-        setTipo(data.tipo ?? 'Clase');
+        setTipo(data.tipo ?? '');
         setComentarios(data.comentarios ?? '');
         setFechaEdit(data.fecha ? new Date(data.fecha).toISOString().split('T')[0] : '');
-        setTemaId(data.tema?.id ?? '');
+        setTemaIds(data.temas?.map((t: { tema: { id: string } }) => t.tema.id) ?? []);
       })
       .catch(() => {});
   }, [claseId, sesionId]);
+
+  useEffect(() => {
+    api.get('/config/enums/TipoSesion?activos=true')
+      .then(({ data }) => {
+        setTipoSesionOpts(data.valores);
+        setTipo((prev) => prev || data.valores[0]?.codigo || '');
+      })
+      .catch(() => {});
+  }, []);
 
   const autoSave = useCallback(async (inscripcionId: string) => {
     const row = rowsRef.current.find((r) => r.inscripcion_id === inscripcionId);
@@ -212,7 +215,7 @@ export default function PaseListaSesionPage() {
       await api.patch(`/clases/${claseId}/sesiones/${sesionId}`, {
         tipo,
         comentarios: comentarios || null,
-        tema_id: temaId || null,
+        tema_ids: temaIds,
         ...(fechaEdit && { fecha: fechaEdit }),
       });
       setSuccessSesion(true);
@@ -315,22 +318,25 @@ export default function PaseListaSesionPage() {
               <Select
                 value={tipo}
                 label="Tipo de sesión"
-                onChange={(e) => setTipo(e.target.value as TipoSesion)}
+                onChange={(e) => setTipo(e.target.value)}
               >
-                {TIPOS.map((t) => (
-                  <MenuItem key={t} value={t}>{TIPOS_LABEL[t]}</MenuItem>
+                {tipoSesionOpts.map((t) => (
+                  <MenuItem key={t.codigo} value={t.codigo}>{t.etiqueta}</MenuItem>
                 ))}
               </Select>
             </FormControl>
 
             <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Tema cursado</InputLabel>
+              <InputLabel>Temas cursados</InputLabel>
               <Select
-                value={temaId}
-                label="Tema cursado"
-                onChange={(e) => setTemaId(e.target.value)}
+                multiple
+                value={temaIds}
+                label="Temas cursados"
+                onChange={(e) => setTemaIds(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value as string[])}
+                renderValue={(selected) =>
+                  (selected as string[]).map((id) => temas.find((t) => t.id === id)?.titulo ?? id).join(', ')
+                }
               >
-                <MenuItem value=""><em>Sin tema asignado</em></MenuItem>
                 {temas.map((t) => (
                   <MenuItem key={t.id} value={t.id}>{t.titulo}</MenuItem>
                 ))}

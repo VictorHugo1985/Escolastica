@@ -12,6 +12,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const inscripcion = await prisma.inscripciones.findFirst({ where: { id: params.inscripcionId, clase_id: params.id } });
     if (!inscripcion) throw new ApiError('Inscripción no encontrada', 404);
 
+    if (dto.motivo_baja) {
+      const motivoValido = await prisma.enum_valores.findFirst({
+        where: { categoria: { nombre: 'MotivoBaja' }, codigo: dto.motivo_baja, activo: true },
+      });
+      if (!motivoValido) throw new ApiError('Motivo de baja no válido', 400);
+    }
+
     const updated = await prisma.inscripciones.update({
       where: { id: params.inscripcionId },
       data: { estado: 'Baja', fecha_baja: new Date(), motivo_baja: dto.motivo_baja, comentarios: dto.comentarios },

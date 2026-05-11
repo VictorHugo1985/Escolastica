@@ -19,6 +19,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import TuneIcon from '@mui/icons-material/Tune';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useAuthStore } from '@/store/auth.store';
@@ -49,6 +50,7 @@ const navItems: NavItem[] = [
   { label: 'Listas',     href: '/admin/asistencia',     icon: <FactCheckIcon />,      roles: ['Instructor', 'Escolastico'] },
   { label: 'Calendario', href: '/admin/calendario',     icon: <CalendarMonthIcon />,  roles: ['Instructor', 'Escolastico'] },
   { label: 'Kardex',     href: '/admin/kardex',         icon: <MenuBookIcon />,       roles: ['Escolastico'] },
+  { label: 'Parámetros', href: '/admin/configuracion/enums', icon: <TuneIcon />, roles: ['Escolastico'] },
 ];
 
 export default function Sidebar({ open, onClose, esInstructor }: SidebarProps) {

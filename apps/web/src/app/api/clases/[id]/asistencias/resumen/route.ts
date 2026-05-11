@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       include: {
         usuario: { select: { id: true, nombre_completo: true } },
         asistencias: {
-          select: { estado: true, sesion: { select: { fecha: true, tipo: true, tema: { select: { titulo: true } } } } },
+          select: { estado: true, sesion: { select: { fecha: true, tipo: true, temas: { include: { tema: { select: { titulo: true } } } } } } },
           orderBy: { sesion: { fecha: 'desc' } },
         },
       },
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           fecha: a.sesion.fecha,
           estado: a.estado,
           tipo: a.sesion.tipo,
-          tema: a.sesion.tema?.titulo ?? null,
+          tema: a.sesion.temas.map((t) => t.tema.titulo).join(', ') || null,
         })),
       };
     }));

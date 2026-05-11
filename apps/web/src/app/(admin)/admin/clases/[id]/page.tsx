@@ -44,19 +44,8 @@ import AddIcon from '@mui/icons-material/Add';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
-type TipoNotaFinal = 'Nota_Teorica' | 'Nota_Practica' | 'Examen_Final' | 'Trabajo_Escrito';
-type EstadoNota = 'Sobresaliente' | 'Solido' | 'Aprobado' | 'Reprobado';
-
-const TIPO_NOTA_LABELS: Record<TipoNotaFinal, string> = {
-  Nota_Teorica: 'Nota Teórica',
-  Nota_Practica: 'Nota Práctica',
-  Examen_Final: 'Examen Final',
-  Trabajo_Escrito: 'Trabajo Escrito',
-};
-const TIPOS_NOTA = Object.keys(TIPO_NOTA_LABELS) as TipoNotaFinal[];
-const ESTADOS_NOTA: EstadoNota[] = ['Sobresaliente', 'Solido', 'Aprobado', 'Reprobado'];
-
-interface NotaFinal { id: string; tipo_nota: TipoNotaFinal; valor: EstadoNota }
+interface EnumValor { codigo: string; etiqueta: string }
+interface NotaFinal { id: string; tipo_nota: string; valor: string }
 interface Usuario { id: string; nombre_completo: string; email: string }
 interface Inscripcion {
   id: string;
@@ -81,8 +70,6 @@ interface Clase {
   _count: { sesiones: number };
 }
 
-const MOTIVOS = ['Ausencia', 'Laboral', 'Personal', 'Desconocido'] as const;
-
 export default function ClaseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -101,10 +88,15 @@ export default function ClaseDetailPage() {
   const [iniciandoSesion, setIniciandoSesion] = useState(false);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
 
+  // Enum options (loaded from API)
+  const [tipoNotaOpts, setTipoNotaOpts] = useState<EnumValor[]>([]);
+  const [estadoNotaOpts, setEstadoNotaOpts] = useState<EnumValor[]>([]);
+  const [motivoBajaOpts, setMotivoBajaOpts] = useState<EnumValor[]>([]);
+
   // Notas finales dialog
   const [notasTarget, setNotasTarget] = useState<Inscripcion | null>(null);
-  const [notasTipo, setNotasTipo] = useState<TipoNotaFinal>('Nota_Teorica');
-  const [notasValor, setNotasValor] = useState<EstadoNota>('Aprobado');
+  const [notasTipo, setNotasTipo] = useState('');
+  const [notasValor, setNotasValor] = useState('');
   const [notasAdding, setNotasAdding] = useState(false);
   const [notasError, setNotasError] = useState('');
 
@@ -141,10 +133,24 @@ export default function ClaseDetailPage() {
 
   useEffect(() => { loadClase(); }, [loadClase]);
 
+  useEffect(() => {
+    Promise.all([
+      api.get('/config/enums/TipoNotaFinal?activos=true'),
+      api.get('/config/enums/EstadoNota?activos=true'),
+      api.get('/config/enums/MotivoBaja?activos=true'),
+    ]).then(([tn, en, mb]) => {
+      setTipoNotaOpts(tn.data.valores);
+      setEstadoNotaOpts(en.data.valores);
+      setMotivoBajaOpts(mb.data.valores);
+      setNotasTipo(tn.data.valores[0]?.codigo ?? '');
+      setNotasValor(en.data.valores[0]?.codigo ?? '');
+    }).catch(() => {});
+  }, []);
+
   // --- Baja ---
   function openBaja(insc: Inscripcion) {
     setBajaTarget(insc);
-    setBajaMotivo('Ausencia');
+    setBajaMotivo(motivoBajaOpts[0]?.codigo ?? '');
     setBajaComentarios('');
   }
 
@@ -311,7 +317,7 @@ export default function ClaseDetailPage() {
         return (
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', py: 0.5 }}>
             {insc.notas_finales.map((n) => (
-              <Chip key={n.id} size="small" label={`${TIPO_NOTA_LABELS[n.tipo_nota]}: ${n.valor}`} sx={{ fontSize: 11 }} />
+              <Chip key={n.id} size="small" label={`${tipoNotaOpts.find((o) => o.codigo === n.tipo_nota)?.etiqueta ?? n.tipo_nota}: ${estadoNotaOpts.find((o) => o.codigo === n.valor)?.etiqueta ?? n.valor}`} sx={{ fontSize: 11 }} />
             ))}
             <Tooltip title="Gestionar notas finales">
               <IconButton size="small" onClick={() => { setNotasTarget(insc); setNotasError(''); }}>
@@ -482,7 +488,7 @@ export default function ClaseDetailPage() {
               label="Motivo *"
               onChange={(e) => setBajaMotivo(e.target.value)}
             >
-              {MOTIVOS.map((m) => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+              {motivoBajaOpts.map((m) => <MenuItem key={m.codigo} value={m.codigo}>{m.etiqueta}</MenuItem>)}
             </Select>
           </FormControl>
           <TextField
@@ -535,7 +541,7 @@ export default function ClaseDetailPage() {
           )}
           {notasTarget?.notas_finales.map((n) => (
             <Box key={n.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-              <Chip size="small" label={`${TIPO_NOTA_LABELS[n.tipo_nota]}: ${n.valor}`} sx={{ flex: 1 }} />
+              <Chip size="small" label={`${tipoNotaOpts.find((o) => o.codigo === n.tipo_nota)?.etiqueta ?? n.tipo_nota}: ${estadoNotaOpts.find((o) => o.codigo === n.valor)?.etiqueta ?? n.valor}`} sx={{ flex: 1 }} />
               <IconButton size="small" color="error" onClick={() => deleteNota(n.id)}>
                 <DeleteIcon fontSize="small" />
               </IconButton>
@@ -544,14 +550,14 @@ export default function ClaseDetailPage() {
           <Box sx={{ mt: 2, display: 'flex', gap: 1, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>Tipo</InputLabel>
-              <Select value={notasTipo} label="Tipo" onChange={(e) => setNotasTipo(e.target.value as TipoNotaFinal)}>
-                {TIPOS_NOTA.map((t) => <MenuItem key={t} value={t}>{TIPO_NOTA_LABELS[t]}</MenuItem>)}
+              <Select value={notasTipo} label="Tipo" onChange={(e) => setNotasTipo(e.target.value)}>
+                {tipoNotaOpts.map((t) => <MenuItem key={t.codigo} value={t.codigo}>{t.etiqueta}</MenuItem>)}
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 130 }}>
               <InputLabel>Valor</InputLabel>
-              <Select value={notasValor} label="Valor" onChange={(e) => setNotasValor(e.target.value as EstadoNota)}>
-                {ESTADOS_NOTA.map((v) => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+              <Select value={notasValor} label="Valor" onChange={(e) => setNotasValor(e.target.value)}>
+                {estadoNotaOpts.map((v) => <MenuItem key={v.codigo} value={v.codigo}>{v.etiqueta}</MenuItem>)}
               </Select>
             </FormControl>
             <Button

@@ -18,11 +18,14 @@ import TextField from '@mui/material/TextField';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
+import Button from '@mui/material/Button';
 import PersonIcon from '@mui/icons-material/Person';
 import SchoolIcon from '@mui/icons-material/School';
 import ClassIcon from '@mui/icons-material/Class';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
+import DownloadIcon from '@mui/icons-material/Download';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
@@ -31,12 +34,14 @@ type Modo = 'miembro' | 'instructor' | 'clase';
 interface UserOption { id: string; nombre_completo: string; roles: { rol: { nombre: string } }[]; }
 interface ClaseOption { id: string; codigo: string; materia: { nombre: string }; instructor: { nombre_completo: string }; estado: string; }
 
-interface SesionResumen { fecha: string; estado: string; tipo?: string; tema?: string | null; }
+interface SesionResumen { fecha: string; estado: string; tipo?: string; tema?: string | null; temas?: string[]; }
+
+interface NotaFinal { tipo_nota: string; valor: string }
 
 interface AsistenciaMiembro {
   inscripcion_id: string;
   clase: { id: string; codigo: string; estado: string; materia: { id: string; nombre: string } };
-  nota_final: 'Sobresaliente' | 'Solido' | 'Aprobado' | 'Reprobado' | null;
+  notas_finales: NotaFinal[];
   concluyo_temario: boolean;
   fecha_conclusion_temario: string | null;
   total_sesiones: number;
@@ -111,7 +116,7 @@ function SesionDot({ sesion }: { sesion: SesionResumen }) {
   const tooltipLines = [
     `${fmtFecha(sesion.fecha)} · ${sesion.estado}`,
     sesion.tipo && `Tipo: ${sesion.tipo}`,
-    sesion.tema && `Tema: ${sesion.tema}`,
+    (sesion.temas?.length ? sesion.temas.join(', ') : sesion.tema) && `Tema: ${sesion.temas?.length ? sesion.temas.join(', ') : sesion.tema}`,
   ].filter(Boolean).join('\n');
   return (
     <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{tooltipLines}</span>} arrow>
@@ -195,6 +200,14 @@ export default function AdminKardexPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [soloActivas, setSoloActivas] = useState(true);
+  const [tipoNotaOpts, setTipoNotaOpts] = useState<{ codigo: string; etiqueta: string }[]>([]);
+  const [exportLoading, setExportLoading] = useState(false);
+
+  useEffect(() => {
+    api.get('/config/enums/TipoNotaFinal')
+      .then(({ data }) => setTipoNotaOpts(data.valores))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -227,6 +240,28 @@ export default function AdminKardexPage() {
       .catch(() => setError('Error al cargar datos'))
       .finally(() => setLoading(false));
   }, [selectedId, modo]);
+
+  async function handleExport() {
+    if (!selectedId) return;
+    setExportLoading(true);
+    try {
+      const resp = await api.get(`/clases/${selectedId}/asistencias/export`, { responseType: 'arraybuffer' });
+      const blob = new Blob([resp.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const clase = clases.find((c) => c.id === selectedId);
+      a.download = `asistencias-${clase?.codigo ?? selectedId}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Error al exportar');
+    } finally {
+      setExportLoading(false);
+    }
+  }
 
   function handleModoChange(_: unknown, v: Modo | null) {
     if (!v) return;
@@ -301,6 +336,18 @@ export default function AdminKardexPage() {
           </FormControl>
         )}
 
+        {modo === 'clase' && selectedId && data && data.length > 0 && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={exportLoading ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />}
+            onClick={handleExport}
+            disabled={exportLoading}
+          >
+            Exportar
+          </Button>
+        )}
+
         {modo !== 'miembro' && (
           <ToggleButtonGroup
             value={soloActivas ? 'activas' : 'todas'}
@@ -339,18 +386,38 @@ export default function AdminKardexPage() {
               {(data as AsistenciaMiembro[]).map((a) => (
                 <Card key={a.inscripcion_id} elevation={1}>
                   <CardContent>
-                    {/* Encabezado: materia + estado de clase + % asistencia */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    {/* Encabezado: materia + temario + notas + estado + % */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
                       <SchoolIcon color="primary" fontSize="small" />
                       <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
                         {a.clase.materia.nombre}
                       </Typography>
+                      <Tooltip
+                        title={a.concluyo_temario
+                          ? `Temario concluido${a.fecha_conclusion_temario ? ` · ${fmtFechaLarga(a.fecha_conclusion_temario)}` : ''}`
+                          : 'Temario en curso'}
+                        arrow
+                      >
+                        {a.concluyo_temario
+                          ? <TaskAltIcon sx={{ fontSize: 17, color: 'success.main' }} />
+                          : <AutoStoriesIcon sx={{ fontSize: 17, color: 'text.disabled' }} />}
+                      </Tooltip>
+                      {a.notas_finales?.map((n) => (
+                        <Tooltip
+                          key={n.tipo_nota}
+                          title={`${tipoNotaOpts.find((o) => o.codigo === n.tipo_nota)?.etiqueta ?? n.tipo_nota}: ${n.valor}`}
+                          arrow
+                        >
+                          <FiberManualRecordIcon
+                            sx={{ fontSize: 13, color: `${NOTA_COLOR[n.valor] ?? 'text'}.main` }}
+                          />
+                        </Tooltip>
+                      ))}
                       <Chip
                         label={a.clase.estado}
                         size="small"
                         color={a.clase.estado === 'Activa' ? 'success' : a.clase.estado === 'Finalizada' ? 'default' : 'warning'}
                         variant="outlined"
-                        sx={{ mr: 0.5 }}
                       />
                       <PctChip value={a.porcentaje} />
                     </Box>
@@ -368,29 +435,6 @@ export default function AdminKardexPage() {
                       <Typography variant="body2" color="warning.main">Licencias: <strong>{a.licencias}</strong></Typography>
                     </Box>
 
-                    {/* Conclusión y nota final */}
-                    <Box sx={{ display: 'flex', gap: 1.5, mt: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {a.concluyo_temario
-                          ? <CheckCircleIcon fontSize="small" color="success" />
-                          : <CancelIcon fontSize="small" color="disabled" />}
-                        <Typography variant="body2" color={a.concluyo_temario ? 'success.main' : 'text.disabled'}>
-                          {a.concluyo_temario ? 'Concluyó temario' : 'Sin concluir temario'}
-                        </Typography>
-                        {a.concluyo_temario && a.fecha_conclusion_temario && (
-                          <Typography variant="caption" color="text.secondary">
-                            ({fmtFechaLarga(a.fecha_conclusion_temario)})
-                          </Typography>
-                        )}
-                      </Box>
-                      {a.nota_final && (
-                        <Chip
-                          label={`Nota: ${a.nota_final}`}
-                          size="small"
-                          color={NOTA_COLOR[a.nota_final] ?? 'default'}
-                        />
-                      )}
-                    </Box>
 
                     {a.ultimas_sesiones.length > 0 && (
                       <Box sx={{ mt: 1.5 }}>

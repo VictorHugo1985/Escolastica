@@ -13,6 +13,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!before) throw new ApiError('Inscripción no encontrada', 404);
     if (before.estado !== 'Activo') throw new ApiError(`No se puede dar de baja una inscripción con estado '${before.estado}'`, 409);
 
+    if (dto.motivo_baja) {
+      const motivoValido = await prisma.enum_valores.findFirst({
+        where: { categoria: { nombre: 'MotivoBaja' }, codigo: dto.motivo_baja, activo: true },
+      });
+      if (!motivoValido) throw new ApiError('Motivo de baja no válido', 400);
+    }
+
     const updated = await prisma.inscripciones.update({
       where: { id: params.id },
       data: { estado: 'Baja', fecha_baja: new Date(), motivo_baja: dto.motivo_baja, comentarios: dto.comentarios },

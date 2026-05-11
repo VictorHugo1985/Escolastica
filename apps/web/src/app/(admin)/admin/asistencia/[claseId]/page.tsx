@@ -35,7 +35,7 @@ interface Sesion {
   fecha: string;
   tipo: string;
   comentarios: string | null;
-  tema: { id: string; titulo: string } | null;
+  temas: { tema: { id: string; titulo: string } }[];
   _count: { asistencias: number };
 }
 
@@ -221,9 +221,9 @@ export default function SesionesHubPage() {
                                 {sesion._count.asistencias}/{clase?.inscripciones?.length ?? '?'} presentes
                               </Typography>
                             </Box>
-                            {sesion.tema && (
+                            {sesion.temas.length > 0 && (
                               <Typography variant="caption" color="text.secondary" noWrap>
-                                Tema: {sesion.tema.titulo}
+                                Tema: {sesion.temas.map((t) => t.tema.titulo).join(', ')}
                               </Typography>
                             )}
                           </Box>

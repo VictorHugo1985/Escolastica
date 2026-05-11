@@ -3,9 +3,6 @@ import { prisma } from '@/lib/prisma';
 import { auditLog } from '@/lib/audit';
 import { requireAuth, json, handleError, ApiError } from '@/lib/route';
 
-const TIPOS_VALIDOS = ['Nota_Teorica', 'Nota_Practica', 'Examen_Final', 'Trabajo_Escrito'] as const;
-const VALORES_VALIDOS = ['Sobresaliente', 'Solido', 'Aprobado', 'Reprobado'] as const;
-
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const actor = await requireAuth(req);
@@ -21,8 +18,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const esInstructor = inscripcion.clase.instructor_id === actor.sub;
     if (!esEscol && !esInstructor) throw new ApiError('Solo el instructor titular o un Escolástico puede registrar notas finales', 403);
 
-    if (!TIPOS_VALIDOS.includes(tipo_nota)) throw new ApiError('Tipo de nota inválido', 400);
-    if (!VALORES_VALIDOS.includes(valor)) throw new ApiError('Valor de nota inválido', 400);
+    const [tipoValido, valorValido] = await Promise.all([
+      prisma.enum_valores.findFirst({ where: { categoria: { nombre: 'TipoNotaFinal' }, codigo: tipo_nota, activo: true } }),
+      prisma.enum_valores.findFirst({ where: { categoria: { nombre: 'EstadoNota' }, codigo: valor, activo: true } }),
+    ]);
+    if (!tipoValido) throw new ApiError('Tipo de nota inválido', 400);
+    if (!valorValido) throw new ApiError('Valor de nota inválido', 400);
 
     let nota;
     try {

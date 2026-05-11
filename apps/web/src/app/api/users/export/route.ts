@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
       { header: 'Fecha inscripción', key: 'fecha_inscripcion', width: 18 },
       { header: 'Fecha recibimiento', key: 'fecha_recibimiento', width: 18 },
       { header: 'Roles', key: 'roles', width: 25 },
+      { header: 'Archivo', key: 'file_actualizado', width: 12 },
       { header: 'Creado el', key: 'created_at', width: 18 },
     ];
 
@@ -54,6 +55,7 @@ export async function GET(req: NextRequest) {
         fecha_inscripcion: u.fecha_inscripcion ? new Date(u.fecha_inscripcion).toLocaleDateString('es-AR') : '',
         fecha_recibimiento: u.fecha_recibimiento ? new Date(u.fecha_recibimiento).toLocaleDateString('es-AR') : '',
         roles: (u as any).roles?.map((r: any) => r.rol.nombre).join(', ') ?? '',
+        file_actualizado: u.file_actualizado ? 'Sí' : 'No',
         created_at: new Date(u.created_at).toLocaleDateString('es-AR'),
       });
     }

@@ -22,6 +22,8 @@ const NOTA_COLOR: Record<string, 'success' | 'info' | 'warning' | 'error'> = {
   Reprobado: 'error',
 };
 
+interface NotaFinal { tipo_nota: string; valor: string }
+
 function fmtFechaLarga(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('es-BO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -30,7 +32,7 @@ function fmtFechaLarga(iso: string): string {
 interface AsistenciaResumen {
   inscripcion_id: string;
   clase: { id: string; codigo: string; estado: string; materia: { id: string; nombre: string } };
-  nota_final: 'Sobresaliente' | 'Solido' | 'Aprobado' | 'Reprobado' | null;
+  notas_finales: NotaFinal[];
   concluyo_temario: boolean;
   fecha_conclusion_temario: string | null;
   total_sesiones: number;
@@ -44,6 +46,13 @@ export default function KardexPage() {
   const [asistencias, setAsistencias] = useState<AsistenciaResumen[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tipoNotaOpts, setTipoNotaOpts] = useState<{ codigo: string; etiqueta: string }[]>([]);
+
+  useEffect(() => {
+    api.get('/config/enums/TipoNotaFinal')
+      .then(({ data }) => setTipoNotaOpts(data.valores))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     api.get('/users/me/asistencias')
@@ -125,13 +134,14 @@ export default function KardexPage() {
                       </Typography>
                     )}
                   </Box>
-                  {a.nota_final && (
+                  {a.notas_finales?.map((n) => (
                     <Chip
-                      label={`Nota: ${a.nota_final}`}
+                      key={n.tipo_nota}
+                      label={`${tipoNotaOpts.find((o) => o.codigo === n.tipo_nota)?.etiqueta ?? n.tipo_nota}: ${n.valor}`}
                       size="small"
-                      color={NOTA_COLOR[a.nota_final] ?? 'default'}
+                      color={NOTA_COLOR[n.valor] ?? 'default'}
                     />
-                  )}
+                  ))}
                 </Box>
               </CardContent>
             </Card>
