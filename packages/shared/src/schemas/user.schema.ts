@@ -11,16 +11,17 @@ const optRef = (schema: z.ZodTypeAny) =>
   });
 
 export const CreateUserSchema = z.object({
-  email:             optRef(z.string().email('Email inválido')),
+  email:             z.string().optional(),
   nombre_completo:   z.string().min(2).max(255),
   genero:            z.string().max(20).optional(),
   fecha_nacimiento:  optRef(z.string().date('Fecha inválida')),
-  telefono:          optRef(z.string().regex(/^\d{7,15}$/, 'Teléfono debe tener entre 7 y 15 dígitos')),
+  telefono:          z.string().optional(),
   ci:                z.string().max(20).optional(),
   file_actualizado:  z.boolean().optional(),
   fecha_inscripcion: optRef(z.string().date('Fecha inválida')),
   fecha_recibimiento: optRef(z.string().date('Fecha inválida')),
 });
+
 
 export const UpdateUserSchema = CreateUserSchema.partial().extend({
   estado: z.enum(['Activo', 'Inactivo']).optional(),

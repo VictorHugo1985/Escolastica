@@ -4,7 +4,38 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CreateUserSchema, UpdateUserSchema } from '@escolastica/shared';
+import { z } from 'zod';
+
+const NewUserFormSchema = z.object({
+  nombre_completo: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(255),
+  email:           z.string().optional().refine(
+    (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    { message: 'Email inválido' },
+  ),
+  telefono:        z.string().optional().refine(
+    (v) => !v || /^\d{7,15}$/.test(v),
+    { message: 'Teléfono debe tener entre 7 y 15 dígitos' },
+  ),
+});
+
+const EditUserFormSchema = z.object({
+  nombre_completo:    z.string().min(2).max(255).optional(),
+  email:              z.string().optional().refine(
+    (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    { message: 'Email inválido' },
+  ),
+  telefono:           z.string().optional().refine(
+    (v) => !v || /^\d{7,15}$/.test(v),
+    { message: 'Teléfono debe tener entre 7 y 15 dígitos' },
+  ),
+  ci:                 z.string().max(20).optional(),
+  genero:             z.string().max(20).optional(),
+  fecha_nacimiento:   z.string().optional(),
+  fecha_inscripcion:  z.string().optional(),
+  fecha_recibimiento: z.string().optional(),
+  file_actualizado:   z.boolean().optional(),
+  estado:             z.enum(['Activo', 'Inactivo']).optional(),
+});
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -55,7 +86,7 @@ export default function UserFormPage() {
     getValues,
     formState: { errors, isSubmitting },
   } = useForm<any>({
-    resolver: zodResolver(isNew ? CreateUserSchema : UpdateUserSchema),
+    resolver: zodResolver(isNew ? NewUserFormSchema : EditUserFormSchema),
     defaultValues: {
       nombre_completo: '',
       email: '',
@@ -96,14 +127,23 @@ export default function UserFormPage() {
     if (!isNew) loadUser();
   }, [id]);
 
-  async function onSubmit(resolvedData: any) {
+  async function onSubmit(_resolvedData: any) {
     setError('');
     setSuccess('');
     try {
       if (isNew) {
-        const payload = Object.fromEntries(
-          Object.entries(resolvedData).filter(([, v]) => v !== undefined && v !== null && v !== '')
-        );
+        const v = getValues();
+        const payload: Record<string, any> = {
+          nombre_completo: v.nombre_completo,
+          file_actualizado: !!v.file_actualizado,
+        };
+        if (v.email) payload.email = v.email;
+        if (v.ci) payload.ci = v.ci;
+        if (v.telefono) payload.telefono = v.telefono;
+        if (v.genero) payload.genero = v.genero;
+        if (v.fecha_nacimiento) payload.fecha_nacimiento = v.fecha_nacimiento;
+        if (v.fecha_inscripcion) payload.fecha_inscripcion = v.fecha_inscripcion;
+        if (v.fecha_recibimiento) payload.fecha_recibimiento = v.fecha_recibimiento;
         await api.post('/users', payload);
         router.push('/admin/users');
       } else {
@@ -196,7 +236,10 @@ export default function UserFormPage() {
             </Box>
           )}
 
-          <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <Box component="form" onSubmit={handleSubmit(onSubmit, (errs) => {
+            const msgs = Object.values(errs).map((e: any) => e?.message).filter(Boolean).join(', ');
+            setError(msgs || 'Por favor revisa los campos');
+          })} noValidate>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
               Datos personales
             </Typography>
@@ -210,11 +253,14 @@ export default function UserFormPage() {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField label="Correo electrónico" type="text" fullWidth
-                  inputProps={{ autoComplete: 'off', autoCorrect: 'off', spellCheck: false }}
-                  error={!!errors.email}
-                  helperText={errors.email?.message as string}
-                  {...register('email')} />
+                <Controller name="email" control={control} defaultValue=""
+                  render={({ field, fieldState }) => (
+                    <TextField {...field} label="Correo electrónico" fullWidth
+                      error={!!fieldState.error}
+                      helperText={fieldState.error?.message}
+                    />
+                  )}
+                />
               </Grid>
 
               <Grid item xs={12} sm={6}>
@@ -224,11 +270,14 @@ export default function UserFormPage() {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField label="Teléfono" fullWidth placeholder="Ej: 72345678"
-                  inputProps={{ autoComplete: 'off', inputMode: 'numeric' }}
-                  error={!!errors.telefono}
-                  helperText={errors.telefono?.message as string}
-                  {...register('telefono')} />
+                <Controller name="telefono" control={control} defaultValue=""
+                  render={({ field, fieldState }) => (
+                    <TextField {...field} label="Teléfono" fullWidth placeholder="Ej: 72345678"
+                      error={!!fieldState.error}
+                      helperText={fieldState.error?.message}
+                    />
+                  )}
+                />
               </Grid>
 
               <Grid item xs={12} sm={6}>
