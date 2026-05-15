@@ -11,15 +11,18 @@ export async function GET(req: NextRequest) {
     const clase = await prisma.clases.findUnique({ where: { id: claseId }, include: { materia: { select: { es_curso_probacion: true } } } });
     if (!clase) throw new ApiError('Clase no encontrada', 404);
 
+    // inscripciones: { none: ... } excluye usuarios ya inscritos activos en esta clase
+    const noInscritoActivo = { inscripciones: { none: { clase_id: claseId, estado: 'Activo' as const } } };
+
     if (clase.materia.es_curso_probacion) {
       return json(await prisma.usuarios.findMany({
-        where: { estado: 'Activo', id: { not: clase.instructor_id }, roles: { some: { rol: { nombre: 'Probacionista' } } } },
+        where: { estado: 'Activo', id: { not: clase.instructor_id }, roles: { some: { rol: { nombre: 'Probacionista' } } }, ...noInscritoActivo },
         select: { id: true, nombre_completo: true, email: true }, orderBy: { nombre_completo: 'asc' },
       }));
     }
 
     return json(await prisma.usuarios.findMany({
-      where: { estado: 'Activo', id: { not: clase.instructor_id }, NOT: { roles: { some: { rol: { nombre: { in: ['Probacionista', 'ExProbacionista'] } } } } } },
+      where: { estado: 'Activo', id: { not: clase.instructor_id }, NOT: { roles: { some: { rol: { nombre: { in: ['Probacionista', 'ExProbacionista'] } } } } }, ...noInscritoActivo },
       select: { id: true, nombre_completo: true, email: true }, orderBy: { nombre_completo: 'asc' },
     }));
   } catch (e) { return handleError(e); }

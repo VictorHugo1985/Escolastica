@@ -106,6 +106,7 @@ export default function ClaseDetailPage() {
   const [candidates, setCandidates] = useState<Usuario[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [inscribingId, setInscribingId] = useState('');
+  const [inscritosEnSesion, setInscritosEnSesion] = useState<string[]>([]);
 
   const loadClase = useCallback(async () => {
     try {
@@ -241,15 +242,29 @@ export default function ClaseDetailPage() {
   }
 
   // --- Alta (inscribir) ---
+  function normalizeStr(s: string): string {
+    return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  function closeAddDialog() {
+    setAddOpen(false);
+    setSearch('');
+    setCandidates([]);
+    setInscritosEnSesion([]);
+  }
+
   async function searchCandidates(q: string) {
     setSearch(q);
     if (!q.trim()) { setCandidates([]); return; }
     setSearchLoading(true);
     try {
       const { data } = await api.get('/users/eligible-students', { params: { claseId: id } });
+      const nq = normalizeStr(q);
       const filtered = (data as Usuario[]).filter(
-        (u) => u.nombre_completo.toLowerCase().includes(q.toLowerCase()) ||
-               u.email?.toLowerCase().includes(q.toLowerCase())
+        (u) => !inscritosEnSesion.includes(u.id) && (
+          normalizeStr(u.nombre_completo).includes(nq) ||
+          normalizeStr(u.email ?? '').includes(nq)
+        )
       );
       setCandidates(filtered.slice(0, 10));
     } catch {
@@ -263,10 +278,9 @@ export default function ClaseDetailPage() {
     setInscribingId(usuarioId);
     try {
       await api.post(`/clases/${id}/inscripciones`, { usuario_id: usuarioId });
-      setAddOpen(false);
-      setSearch('');
-      setCandidates([]);
-      await loadClase();
+      setCandidates((prev) => prev.filter((u) => u.id !== usuarioId));
+      setInscritosEnSesion((prev) => [...prev, usuarioId]);
+      loadClase();
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'Error al inscribir');
     } finally {
@@ -578,7 +592,7 @@ export default function ClaseDetailPage() {
       </Dialog>
 
       {/* Dialog: Inscribir alumno */}
-      <Dialog open={addOpen} onClose={() => { setAddOpen(false); setSearch(''); setCandidates([]); }} maxWidth="sm" fullWidth>
+      <Dialog open={addOpen} onClose={closeAddDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <SchoolIcon fontSize="small" /> Inscribir alumno
         </DialogTitle>
@@ -636,9 +650,7 @@ export default function ClaseDetailPage() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setAddOpen(false); setSearch(''); setCandidates([]); }}>
-            Cerrar
-          </Button>
+          <Button onClick={closeAddDialog}>Cerrar</Button>
         </DialogActions>
       </Dialog>
     </>
