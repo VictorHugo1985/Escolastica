@@ -37,7 +37,7 @@ import { DataGrid, type GridColDef } from '@mui/x-data-grid';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
-import type { ImportResultDto } from '@escolastica/shared';
+import type { ImportResultDto, ImportPreviewDto } from '@escolastica/shared';
 
 const ROLES = ['', 'Escolastico', 'Instructor', 'Miembro', 'Probacionista', 'ExMiembro'];
 const ESTADOS = ['', 'Activo', 'Inactivo'];
@@ -65,22 +65,32 @@ interface ImportDialogProps {
   onSuccess: () => void;
 }
 
+type ImportStep = 'form' | 'review' | 'done';
+
 function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
+  const [step, setStep] = useState<ImportStep>('form');
   const [rolNombre, setRolNombre] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<ImportPreviewDto | null>(null);
   const [resultado, setResultado] = useState<ImportResultDto | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleClose() {
-    if (resultado) onSuccess();
+  function reset() {
+    setStep('form');
     setRolNombre('');
     setFile(null);
     setFileError('');
+    setPreview(null);
     setResultado(null);
     setErrorMsg('');
+  }
+
+  function handleClose() {
+    if (step === 'done') onSuccess();
+    reset();
     onClose();
   }
 
@@ -109,6 +119,27 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
     }
   }
 
+  async function handleVerificar() {
+    if (!file || !rolNombre) return;
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('rolNombre', rolNombre);
+      formData.append('preview', 'true');
+      const { data } = await api.post<ImportPreviewDto>('/users/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setPreview(data);
+      setStep('review');
+    } catch (err: any) {
+      setErrorMsg(err?.response?.data?.message ?? 'Error al verificar el archivo');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleImport() {
     if (!file || !rolNombre) return;
     setLoading(true);
@@ -121,6 +152,7 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setResultado(data);
+      setStep('done');
     } catch (err: any) {
       setErrorMsg(err?.response?.data?.message ?? 'Error al importar el archivo');
     } finally {
@@ -129,20 +161,19 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
   }
 
   const resultSeverity = resultado
-    ? resultado.errores > 0
-      ? 'warning'
-      : resultado.creados === 0
-        ? 'info'
-        : 'success'
+    ? resultado.errores > 0 ? 'warning' : resultado.creados === 0 ? 'info' : 'success'
     : 'info';
 
+  const hayAdvertencias = (preview?.advertencias.length ?? 0) > 0;
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>Importar usuarios desde CSV</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
         {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
 
-        {!resultado && (
+        {/* ── Paso 1: formulario ── */}
+        {step === 'form' && (
           <>
             <FormControl size="small" required>
               <InputLabel>Rol a asignar</InputLabel>
@@ -176,7 +207,64 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
           </>
         )}
 
-        {resultado && (
+        {/* ── Paso 2: revisión de coincidencias ── */}
+        {step === 'review' && preview && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {hayAdvertencias ? (
+              <Alert severity="warning">
+                Se encontraron <strong>{preview.advertencias.length}</strong> fila{preview.advertencias.length !== 1 ? 's' : ''} con posibles nombres duplicados.
+                {preview.sin_advertencias > 0 && <> Las otras <strong>{preview.sin_advertencias}</strong> se importarán sin inconvenientes.</>}
+              </Alert>
+            ) : (
+              <Alert severity="success">
+                No se encontraron posibles duplicados. Las <strong>{preview.total}</strong> filas están listas para importar.
+              </Alert>
+            )}
+
+            {hayAdvertencias && (
+              <Box sx={{ overflowX: 'auto' }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Fila</TableCell>
+                      <TableCell>Nombre en CSV</TableCell>
+                      <TableCell>Coincidencia</TableCell>
+                      <TableCell>Fuente</TableCell>
+                      <TableCell align="right">Similitud</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {preview.advertencias.flatMap((adv) =>
+                      adv.coincidencias.map((c, ci) => (
+                        <TableRow key={`${adv.fila_numero}-${ci}`}>
+                          <TableCell>{adv.fila_numero}</TableCell>
+                          <TableCell>{adv.nombre}</TableCell>
+                          <TableCell>
+                            {c.nombre_similar}
+                            {c.fuente === 'csv' && c.fila_csv != null && (
+                              <Typography component="span" variant="caption" color="text.secondary"> (fila {c.fila_csv})</Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={c.fuente === 'bd' ? 'BD' : 'CSV'} size="small" color={c.fuente === 'bd' ? 'primary' : 'default'} />
+                          </TableCell>
+                          <TableCell align="right">
+                            <Typography variant="body2" color={c.similitud === 100 ? 'error' : 'warning.main'} fontWeight={600}>
+                              {c.similitud}%
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* ── Paso 3: resultado final ── */}
+        {step === 'done' && resultado && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Alert severity={resultSeverity}>
               Total: {resultado.total} &nbsp;|&nbsp; Creados: {resultado.creados} &nbsp;|&nbsp;
@@ -203,11 +291,7 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
                           <TableCell>{f.nombre}</TableCell>
                           <TableCell>{f.email}</TableCell>
                           <TableCell>
-                            <Chip
-                              label={f.resultado}
-                              size="small"
-                              color={f.resultado === 'duplicado' ? 'warning' : 'error'}
-                            />
+                            <Chip label={f.resultado} size="small" color={f.resultado === 'duplicado' ? 'warning' : 'error'} />
                           </TableCell>
                           <TableCell>{f.motivo}</TableCell>
                         </TableRow>
@@ -220,16 +304,30 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
           </Box>
         )}
       </DialogContent>
+
       <DialogActions>
-        <Button onClick={handleClose}>{resultado ? 'Cerrar' : 'Cancelar'}</Button>
-        {!resultado && (
+        <Button onClick={handleClose}>{step === 'done' ? 'Cerrar' : 'Cancelar'}</Button>
+
+        {step === 'form' && (
           <Button
             variant="contained"
             disabled={!file || !rolNombre || loading}
+            onClick={handleVerificar}
+            startIcon={loading ? <CircularProgress size={16} /> : undefined}
+          >
+            Verificar
+          </Button>
+        )}
+
+        {step === 'review' && (
+          <Button
+            variant="contained"
+            color={hayAdvertencias ? 'warning' : 'primary'}
+            disabled={loading}
             onClick={handleImport}
             startIcon={loading ? <CircularProgress size={16} /> : undefined}
           >
-            Importar
+            {hayAdvertencias ? 'Importar de todas formas' : 'Confirmar importación'}
           </Button>
         )}
       </DialogActions>

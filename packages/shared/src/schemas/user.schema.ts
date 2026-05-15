@@ -62,3 +62,23 @@ export interface ImportResultDto {
   errores: number;
   filas_fallidas: FilaImportacionResultado[];
 }
+
+export interface ImportCoincidencia {
+  fuente: 'csv' | 'bd';
+  nombre_similar: string;
+  similitud: number; // 0-100
+  fila_csv?: number;
+  id?: string;
+}
+
+export interface ImportAdvertencia {
+  fila_numero: number;
+  nombre: string;
+  coincidencias: ImportCoincidencia[];
+}
+
+export interface ImportPreviewDto {
+  total: number;
+  sin_advertencias: number;
+  advertencias: ImportAdvertencia[];
+}
