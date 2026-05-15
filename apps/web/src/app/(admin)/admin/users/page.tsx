@@ -140,7 +140,7 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
     }
   }
 
-  async function handleImport() {
+  async function handleImport(skipRows?: number[]) {
     if (!file || !rolNombre) return;
     setLoading(true);
     setErrorMsg('');
@@ -148,6 +148,9 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('rolNombre', rolNombre);
+      if (skipRows && skipRows.length > 0) {
+        formData.append('skipRows', JSON.stringify(skipRows));
+      }
       const { data } = await api.post<ImportResultDto>('/users/import', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -268,7 +271,7 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Alert severity={resultSeverity}>
               Total: {resultado.total} &nbsp;|&nbsp; Creados: {resultado.creados} &nbsp;|&nbsp;
-              Duplicados: {resultado.duplicados} &nbsp;|&nbsp; Errores: {resultado.errores}
+              Duplicados: {resultado.duplicados} &nbsp;|&nbsp; Descartados: {resultado.descartados} &nbsp;|&nbsp; Errores: {resultado.errores}
             </Alert>
             {resultado.filas_fallidas.length > 0 && (
               <>
@@ -291,7 +294,7 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
                           <TableCell>{f.nombre}</TableCell>
                           <TableCell>{f.email}</TableCell>
                           <TableCell>
-                            <Chip label={f.resultado} size="small" color={f.resultado === 'duplicado' ? 'warning' : 'error'} />
+                            <Chip label={f.resultado} size="small" color={f.resultado === 'duplicado' ? 'warning' : f.resultado === 'descartado' ? 'default' : 'error'} />
                           </TableCell>
                           <TableCell>{f.motivo}</TableCell>
                         </TableRow>
@@ -319,12 +322,23 @@ function ImportDialog({ open, onClose, onSuccess }: ImportDialogProps) {
           </Button>
         )}
 
+        {step === 'review' && hayAdvertencias && (
+          <Button
+            variant="outlined"
+            color="warning"
+            disabled={loading}
+            onClick={() => handleImport(preview!.advertencias.map((a) => a.fila_numero))}
+            startIcon={loading ? <CircularProgress size={16} /> : undefined}
+          >
+            Descartar duplicados y continuar
+          </Button>
+        )}
         {step === 'review' && (
           <Button
             variant="contained"
             color={hayAdvertencias ? 'warning' : 'primary'}
             disabled={loading}
-            onClick={handleImport}
+            onClick={() => handleImport()}
             startIcon={loading ? <CircularProgress size={16} /> : undefined}
           >
             {hayAdvertencias ? 'Importar de todas formas' : 'Confirmar importación'}

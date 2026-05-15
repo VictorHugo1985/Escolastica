@@ -51,7 +51,7 @@ export interface FilaImportacionResultado {
   fila_numero: number;
   nombre: string;
   email: string;
-  resultado: 'creado' | 'duplicado' | 'error';
+  resultado: 'creado' | 'duplicado' | 'descartado' | 'error';
   motivo?: string;
 }
 
@@ -59,6 +59,7 @@ export interface ImportResultDto {
   total: number;
   creados: number;
   duplicados: number;
+  descartados: number;
   errores: number;
   filas_fallidas: FilaImportacionResultado[];
 }

@@ -114,7 +114,10 @@ export async function POST(req: NextRequest) {
     const rol = await prisma.roles.findUnique({ where: { nombre: rolNombre } });
     if (!rol) throw new ApiError(`Rol "${rolNombre}" no existe`, 400);
 
-    const resultado = { total: rows.length, creados: 0, duplicados: 0, errores: 0, filas_fallidas: [] as any[] };
+    const skipRowsRaw = formData.get('skipRows') as string | null;
+    const skipRowSet = new Set<number>(skipRowsRaw ? JSON.parse(skipRowsRaw) : []);
+
+    const resultado = { total: rows.length, creados: 0, duplicados: 0, descartados: 0, errores: 0, filas_fallidas: [] as any[] };
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -122,6 +125,8 @@ export async function POST(req: NextRequest) {
       const emailRaw = getCol(row, 'email').trim();
       const email = emailRaw || null;
       const falla = (r: string, motivo: string) => { resultado.filas_fallidas.push({ fila_numero: i + 1, nombre, email: emailRaw, resultado: r, motivo }); };
+
+      if (skipRowSet.has(i + 1)) { resultado.descartados++; falla('descartado', 'Omitido por posible duplicado'); continue; }
 
       if (!nombre) { resultado.errores++; falla('error', 'nombre_completo es requerido'); continue; }
 
