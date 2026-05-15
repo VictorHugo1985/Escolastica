@@ -22,20 +22,25 @@ export async function POST(req: NextRequest) {
 
     let rows: Record<string, string>[];
     try {
-      rows = parse(buffer, { columns: true, skip_empty_lines: true, trim: true });
+      rows = parse(buffer, { columns: true, skip_empty_lines: true, trim: true, bom: true });
     } catch {
       throw new ApiError('El archivo CSV no pudo ser procesado', 400);
     }
 
     if (rows.length === 0) throw new ApiError('El archivo CSV no contiene datos', 400);
-    if (!('nombre_completo' in rows[0])) throw new ApiError('El CSV debe tener la columna: nombre_completo', 400);
+    const cols = Object.keys(rows[0]).map((k) => k.replace(/^﻿/, '').trim());
+    if (!cols.includes('nombre_completo')) throw new ApiError('El CSV debe tener la columna: nombre_completo', 400);
+    const getCol = (row: Record<string, string>, col: string) => {
+      const key = Object.keys(row).find((k) => k.replace(/^﻿/, '').trim() === col) ?? col;
+      return row[key] ?? '';
+    };
 
     const resultado = { total: rows.length, creados: 0, duplicados: 0, errores: 0, filas_fallidas: [] as any[] };
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const nombre = (row['nombre_completo'] ?? '').trim();
-      const emailRaw = (row['email'] ?? '').trim();
+      const nombre = getCol(row, 'nombre_completo').trim();
+      const emailRaw = getCol(row, 'email').trim();
       const email = emailRaw || null;
       const falla = (r: string, motivo: string) => { resultado.filas_fallidas.push({ fila_numero: i + 1, nombre, email: emailRaw, resultado: r, motivo }); };
 
@@ -46,18 +51,18 @@ export async function POST(req: NextRequest) {
         if (existing) { resultado.duplicados++; falla('duplicado', 'El email ya existe'); continue; }
       }
 
-      const estadoRaw = row['estado']?.trim();
+      const estadoRaw = getCol(row, 'estado').trim();
       const estado = ['Activo', 'Inactivo'].includes(estadoRaw) ? estadoRaw as any : 'Activo';
 
       try {
         const user = await prisma.usuarios.create({
           data: {
             nombre_completo: nombre, email,
-            telefono: row['telefono']?.trim() || null,
-            ci: row['ci']?.trim() || null,
-            genero: row['genero']?.trim() || null,
-            fecha_nacimiento: row['fecha_nacimiento']?.trim() ? new Date(row['fecha_nacimiento'].trim()) : null,
-            fecha_inscripcion: row['fecha_inscripcion']?.trim() ? new Date(row['fecha_inscripcion'].trim()) : null,
+            telefono: getCol(row, 'telefono').trim() || null,
+            ci: getCol(row, 'ci').trim() || null,
+            genero: getCol(row, 'genero').trim() || null,
+            fecha_nacimiento: getCol(row, 'fecha_nacimiento').trim() ? new Date(getCol(row, 'fecha_nacimiento').trim()) : null,
+            fecha_inscripcion: getCol(row, 'fecha_inscripcion').trim() ? new Date(getCol(row, 'fecha_inscripcion').trim()) : null,
             estado,
           },
         });
