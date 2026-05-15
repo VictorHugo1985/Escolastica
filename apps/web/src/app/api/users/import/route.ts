@@ -28,21 +28,23 @@ export async function POST(req: NextRequest) {
     }
 
     if (rows.length === 0) throw new ApiError('El archivo CSV no contiene datos', 400);
-    if (!('nombre_completo' in rows[0]) || !('email' in rows[0])) throw new ApiError('El CSV debe tener columnas: nombre_completo, email', 400);
+    if (!('nombre_completo' in rows[0])) throw new ApiError('El CSV debe tener la columna: nombre_completo', 400);
 
     const resultado = { total: rows.length, creados: 0, duplicados: 0, errores: 0, filas_fallidas: [] as any[] };
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const nombre = (row['nombre_completo'] ?? '').trim();
-      const email = (row['email'] ?? '').trim();
-      const falla = (r: string, motivo: string) => { resultado.filas_fallidas.push({ fila_numero: i + 1, nombre, email, resultado: r, motivo }); };
+      const emailRaw = (row['email'] ?? '').trim();
+      const email = emailRaw || null;
+      const falla = (r: string, motivo: string) => { resultado.filas_fallidas.push({ fila_numero: i + 1, nombre, email: emailRaw, resultado: r, motivo }); };
 
       if (!nombre) { resultado.errores++; falla('error', 'nombre_completo es requerido'); continue; }
-      if (!email) { resultado.errores++; falla('error', 'email es requerido'); continue; }
 
-      const existing = await prisma.usuarios.findUnique({ where: { email } });
-      if (existing) { resultado.duplicados++; falla('duplicado', 'El email ya existe'); continue; }
+      if (email) {
+        const existing = await prisma.usuarios.findUnique({ where: { email } });
+        if (existing) { resultado.duplicados++; falla('duplicado', 'El email ya existe'); continue; }
+      }
 
       const estadoRaw = row['estado']?.trim();
       const estado = ['Activo', 'Inactivo'].includes(estadoRaw) ? estadoRaw as any : 'Activo';

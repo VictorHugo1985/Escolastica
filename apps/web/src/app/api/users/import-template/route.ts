@@ -9,7 +9,8 @@ export async function GET(req: NextRequest) {
     const csv = [
       'nombre_completo,email,telefono,ci,fecha_nacimiento,genero,estado,fecha_inscripcion',
       'Juan Perez,juan.perez@ejemplo.com,1134567890,12345678,1990-05-15,Masculino,Activo,2024-03-01',
-      'Maria Garcia,maria.garcia@ejemplo.com,,,1985-11-30,Femenino,,',
+      'Maria Garcia,,,,,,,',
+      'Carlos Lopez,,,,,,Activo,',
     ].join('\n');
 
     return new Response(csv, {
