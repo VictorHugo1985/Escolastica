@@ -7,26 +7,37 @@ import { requireAuth, requireRole, json, handleError, ApiError } from '@/lib/rou
 
 const ROLES_INCLUDE = { roles: { include: { rol: true } } };
 
+function normalizeStr(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const actor = await requireAuth(req);
+    await requireAuth(req);
     const { searchParams } = new URL(req.url);
     const rol = searchParams.get('rol') ?? undefined;
     const estado = searchParams.get('estado') ?? undefined;
     const search = searchParams.get('search') ?? undefined;
 
-    const users = await prisma.usuarios.findMany({
+    const allUsers = await prisma.usuarios.findMany({
       where: {
         ...(rol && { roles: { some: { rol: { nombre: rol } } } }),
         ...(estado && { estado: estado as any }),
-        ...(search && { OR: [
-          { nombre_completo: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-        ] }),
       },
       include: ROLES_INCLUDE,
       orderBy: { nombre_completo: 'asc' },
     });
+
+    const users = search
+      ? (() => {
+          const nq = normalizeStr(search);
+          return allUsers.filter((u) =>
+            normalizeStr(u.nombre_completo).includes(nq) ||
+            normalizeStr(u.email ?? '').includes(nq)
+          );
+        })()
+      : allUsers;
+
     return json(users);
   } catch (e) { return handleError(e); }
 }
