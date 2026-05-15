@@ -248,7 +248,7 @@ function PaseListaContent() {
             onClick={iniciarSesion}
             disabled={iniciando}
           >
-            {iniciando ? 'Iniciando...' : 'Iniciar Sesión'}
+            {iniciando ? 'Iniciando...' : 'Registrar Clase'}
           </Button>
         </Box>
       ) : (

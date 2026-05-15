@@ -164,11 +164,11 @@ export default function SesionesHubPage() {
               ? 'Abriendo...'
               : sesionHoy
               ? 'Continuar sesión de hoy'
-              : 'Iniciar Sesión'}
+              : 'Registrar Clase'}
           </Button>
 
           <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-            Historial de sesiones
+            Historial de clases
           </Typography>
 
           {sesiones.length === 0 ? (
