@@ -60,7 +60,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
-const ALL_ROLES = ['Escolastico', 'Instructor', 'Miembro', 'Probacionista', 'ExMiembro'];
+const ALL_ROLES = ['Escolastico', 'Instructor', 'Miembro', 'Probacionista', 'ExProbacionista', 'ExMiembro'];
 
 interface RolEntry {
   rol: { id: string; nombre: string };
@@ -174,6 +174,7 @@ export default function UserFormPage() {
     try {
       const { data } = await api.post(`/users/${id}/roles`, { rol: roleToAdd });
       setCurrentRoles(data.roles ?? []);
+      if (data.estado) setCurrentEstado(data.estado);
       setRoleToAdd('');
       setSuccess(`Rol "${roleToAdd}" agregado`);
     } catch (err: any) {
@@ -381,7 +382,11 @@ export default function UserFormPage() {
                     key={r.rol.id}
                     label={r.rol.nombre}
                     color="primary"
-                    onDelete={currentRoles.length > 1 ? () => handleRemoveRole(r.rol.nombre) : undefined}
+                    onDelete={
+                      currentRoles.length > 1 || ['ExProbacionista', 'ExMiembro'].includes(r.rol.nombre)
+                        ? () => handleRemoveRole(r.rol.nombre)
+                        : undefined
+                    }
                   />
                 ))}
               </Box>

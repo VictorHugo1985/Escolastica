@@ -39,7 +39,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import type { ImportResultDto, ImportPreviewDto } from '@escolastica/shared';
 
-const ROLES = ['', 'Escolastico', 'Instructor', 'Miembro', 'Probacionista', 'ExMiembro'];
+const ROLES = ['', 'Escolastico', 'Instructor', 'Miembro', 'Probacionista', 'ExProbacionista', 'ExMiembro'];
 const ESTADOS = ['', 'Activo', 'Inactivo'];
 const ROL_OPTIONS = ['Instructor', 'Miembro', 'Probacionista', 'Escolastico', 'ExMiembro', 'ExProbacionista'];
 
