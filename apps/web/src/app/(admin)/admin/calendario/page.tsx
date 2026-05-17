@@ -101,6 +101,7 @@ export default function CalendarioPage() {
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<SelectedBlock | null>(null);
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [filteredInstructorId, setFilteredInstructorId] = useState<string | null>(null);
 
   useEffect(() => {
     const params: Record<string, string> = { estado: 'Activa' };
@@ -123,10 +124,15 @@ export default function CalendarioPage() {
     return map;
   }, [clases]);
 
+  const displayClases = useMemo(() =>
+    filteredInstructorId ? clases.filter((c) => c.instructor.id === filteredInstructorId) : clases,
+    [clases, filteredInstructorId],
+  );
+
   const classesByDay = useMemo(() => {
     const map: Record<number, Array<{ clase: Clase; horario: Horario }>> = {};
     for (const d of DIAS_COLS) map[d] = [];
-    for (const clase of clases) {
+    for (const clase of displayClases) {
       for (const horario of clase.horarios) {
         if (horario.dia_semana >= 1 && horario.dia_semana <= 6) {
           map[horario.dia_semana].push({ clase, horario });
@@ -134,7 +140,7 @@ export default function CalendarioPage() {
       }
     }
     return map;
-  }, [clases]);
+  }, [displayClases]);
 
   const uniqueInstructors = useMemo(() =>
     clases.filter((c, i, arr) => arr.findIndex((x) => x.instructor.id === c.instructor.id) === i),
@@ -142,7 +148,8 @@ export default function CalendarioPage() {
   );
 
   const TIME_COL_W = 44;
-  const COL_MIN_W = 72;
+  const DIA_FLEX:   Record<number, number> = { 1: 1, 2: 2, 3: 2, 4: 2, 5: 1, 6: 1 };
+  const DIA_MIN_W:  Record<number, number> = { 1: 48, 2: 88, 3: 88, 4: 88, 5: 48, 6: 48 };
 
   return (
     <>
@@ -168,7 +175,7 @@ export default function CalendarioPage() {
               <Box
                 key={dia}
                 sx={{
-                  flex: 1, minWidth: COL_MIN_W, textAlign: 'center',
+                  flex: DIA_FLEX[dia], minWidth: DIA_MIN_W[dia], textAlign: 'center',
                   py: 0.75, borderLeft: '1px solid', borderColor: 'divider',
                   bgcolor: 'background.paper',
                 }}
@@ -198,7 +205,7 @@ export default function CalendarioPage() {
               <Box
                 key={dia}
                 sx={{
-                  flex: 1, minWidth: COL_MIN_W, height: GRID_HEIGHT,
+                  flex: DIA_FLEX[dia], minWidth: DIA_MIN_W[dia], height: GRID_HEIGHT,
                   position: 'relative', borderLeft: '1px solid', borderColor: 'divider',
                   bgcolor: 'background.default',
                 }}
@@ -269,13 +276,31 @@ export default function CalendarioPage() {
 
           {/* Instructor legend — Escolástico only */}
           {esEscol && uniqueInstructors.length > 0 && (
-            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1.5, pl: `${TIME_COL_W}px` }}>
-              {uniqueInstructors.map((c) => (
-                <Box key={c.instructor.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: instructorColors[c.instructor.id], flexShrink: 0 }} />
-                  <Typography variant="caption" color="text.secondary">{c.instructor.nombre_completo}</Typography>
-                </Box>
-              ))}
+            <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1, pl: `${TIME_COL_W}px` }}>
+              {uniqueInstructors.map((c) => {
+                const isSelected = filteredInstructorId === c.instructor.id;
+                return (
+                  <Box
+                    key={c.instructor.id}
+                    onClick={() => setFilteredInstructorId(isSelected ? null : c.instructor.id)}
+                    sx={{
+                      display: 'flex', alignItems: 'center', gap: 0.75,
+                      px: 1, py: 0.4, borderRadius: 1, cursor: 'pointer',
+                      border: '1px solid',
+                      borderColor: isSelected ? instructorColors[c.instructor.id] : 'divider',
+                      bgcolor: isSelected ? `${instructorColors[c.instructor.id]}18` : 'transparent',
+                      opacity: filteredInstructorId && !isSelected ? 0.4 : 1,
+                      transition: 'all 0.15s',
+                      '&:hover': { bgcolor: `${instructorColors[c.instructor.id]}22`, opacity: 1 },
+                    }}
+                  >
+                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: instructorColors[c.instructor.id], flexShrink: 0 }} />
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: isSelected ? 700 : 400 }}>
+                      {c.instructor.nombre_completo}
+                    </Typography>
+                  </Box>
+                );
+              })}
             </Box>
           )}
         </Box>
