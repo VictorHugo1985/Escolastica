@@ -198,8 +198,31 @@ export default function UserFormPage() {
     }
   }
 
+  async function handleCambiarAProbacionista() {
+    if (!confirm('¿Cambiar el rol de ExProbacionista a Probacionista?')) return;
+    setAddingRole(true);
+    setError('');
+    try {
+      await api.delete(`/users/${id}/roles/ExProbacionista`);
+      const { data } = await api.post(`/users/${id}/roles`, { rol: 'Probacionista' });
+      setCurrentRoles(data.roles ?? []);
+      if (data.estado) setCurrentEstado(data.estado);
+      setSuccess('Rol cambiado a Probacionista');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'Error al cambiar rol';
+      setError(Array.isArray(msg) ? msg.join(', ') : msg);
+    } finally {
+      setAddingRole(false);
+    }
+  }
+
   const currentRoleNames = currentRoles.map((r) => r.rol.nombre);
-  const availableToAdd = ALL_ROLES.filter((r) => !currentRoleNames.includes(r));
+  const esExProbacionista = currentRoleNames.includes('ExProbacionista');
+  const availableToAdd = ALL_ROLES.filter((r) => {
+    if (currentRoleNames.includes(r)) return false;
+    if (r === 'Probacionista' && esExProbacionista) return false;
+    return true;
+  });
 
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
@@ -390,6 +413,21 @@ export default function UserFormPage() {
                   />
                 ))}
               </Box>
+
+              {esExProbacionista && (
+                <Box sx={{ mb: 2 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                    disabled={addingRole}
+                    onClick={handleCambiarAProbacionista}
+                    startIcon={addingRole ? <CircularProgress size={14} /> : undefined}
+                  >
+                    Cambiar a Probacionista
+                  </Button>
+                </Box>
+              )}
 
               {availableToAdd.length > 0 && (
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
