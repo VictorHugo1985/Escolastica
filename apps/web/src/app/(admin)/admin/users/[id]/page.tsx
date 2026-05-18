@@ -215,11 +215,30 @@ export default function UserFormPage() {
     }
   }
 
+  async function handleCambiarDesdeExMiembro(rolDestino: 'Miembro' | 'Probacionista') {
+    if (!confirm(`¿Cambiar el rol de ExMiembro a ${rolDestino}?`)) return;
+    setAddingRole(true);
+    setError('');
+    try {
+      const { data } = await api.post(`/users/${id}/reinstate-exmiembro`, { rolDestino });
+      setCurrentRoles(data.roles ?? []);
+      if (data.estado) setCurrentEstado(data.estado);
+      setSuccess(`Rol cambiado a ${rolDestino}`);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'Error al cambiar rol';
+      setError(Array.isArray(msg) ? msg.join(', ') : msg);
+    } finally {
+      setAddingRole(false);
+    }
+  }
+
   const currentRoleNames = currentRoles.map((r) => r.rol.nombre);
   const esExProbacionista = currentRoleNames.includes('ExProbacionista');
+  const esExMiembro = currentRoleNames.includes('ExMiembro');
   const availableToAdd = ALL_ROLES.filter((r) => {
     if (currentRoleNames.includes(r)) return false;
     if (r === 'Probacionista' && esExProbacionista) return false;
+    if ((r === 'Miembro' || r === 'Probacionista') && esExMiembro) return false;
     return true;
   });
 
@@ -421,6 +440,31 @@ export default function UserFormPage() {
                     color="warning"
                     disabled={addingRole}
                     onClick={handleCambiarAProbacionista}
+                    startIcon={addingRole ? <CircularProgress size={14} /> : undefined}
+                  >
+                    Cambiar a Probacionista
+                  </Button>
+                </Box>
+              )}
+
+              {esExMiembro && (
+                <Box sx={{ mb: 2, display: 'flex', gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                    disabled={addingRole}
+                    onClick={() => handleCambiarDesdeExMiembro('Miembro')}
+                    startIcon={addingRole ? <CircularProgress size={14} /> : undefined}
+                  >
+                    Cambiar a Miembro
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                    disabled={addingRole}
+                    onClick={() => handleCambiarDesdeExMiembro('Probacionista')}
                     startIcon={addingRole ? <CircularProgress size={14} /> : undefined}
                   >
                     Cambiar a Probacionista
