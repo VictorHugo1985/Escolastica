@@ -587,7 +587,12 @@ export default function AdminKardexPage() {
           {modo === 'clase' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {(data as AsistenciaAlumno[])
-                .sort((a, b) => b.porcentaje - a.porcentaje)
+                .slice()
+                .sort((a, b) => {
+                  if (a.estado_inscripcion !== b.estado_inscripcion)
+                    return a.estado_inscripcion === 'Activo' ? -1 : 1;
+                  return b.porcentaje - a.porcentaje;
+                })
                 .map((a) => (
                   <Card key={a.inscripcion_id} elevation={1}>
                     <CardContent sx={{ py: '12px !important' }}>

@@ -53,13 +53,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         select: { id: true, fecha: true, tipo: true, temas: { include: { tema: { select: { titulo: true } } } } },
       }),
       prisma.inscripciones.findMany({
-        where: { clase_id: params.id, estado: 'Activo' },
-        include: {
+        where: { clase_id: params.id },
+        select: {
+          estado: true,
+          fecha_baja: true,
+          motivo_baja: true,
           usuario: { select: { nombre_completo: true } },
           asistencias: { select: { sesion_id: true, estado: true } },
           notas_finales: { select: { tipo_nota: true, valor: true }, orderBy: { created_at: 'asc' } },
         },
-        orderBy: { usuario: { nombre_completo: 'asc' } },
+        orderBy: [{ estado: 'asc' }, { usuario: { nombre_completo: 'asc' } }],
       }),
       prisma.enum_valores.findMany({
         where: { categoria: { nombre: 'TipoNotaFinal' } },
@@ -130,22 +133,37 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     // --- Data rows ---
     for (const insc of inscripciones) {
+      const esBaja = insc.estado === 'Baja';
       const asistMap = Object.fromEntries(insc.asistencias.map((a) => [a.sesion_id, a.estado]));
-      const notas = insc.notas_finales
-        .map((n) => `${labelMap[n.tipo_nota] ?? n.tipo_nota}: ${n.valor}`)
-        .join(' | ');
+
+      let notasParts = insc.notas_finales
+        .map((n) => `${labelMap[n.tipo_nota] ?? n.tipo_nota}: ${n.valor}`);
+      if (esBaja) {
+        const fechaBajaStr = insc.fecha_baja
+          ? new Date(insc.fecha_baja).toLocaleDateString('es-AR', { timeZone: 'UTC' })
+          : '';
+        const bajaParts = ['BAJA', insc.motivo_baja, fechaBajaStr].filter(Boolean);
+        notasParts = [bajaParts.join(' · '), ...notasParts];
+      }
 
       const rowValues: string[] = [insc.usuario.nombre_completo];
       for (const s of sesiones) rowValues.push(asistMap[s.id] ?? '');
-      rowValues.push(notas);
+      rowValues.push(notasParts.join(' | '));
 
       const dataRow = sheet.addRow(rowValues);
+
+      if (esBaja) {
+        dataRow.getCell(1).font = { strikethrough: true, color: { argb: 'FF888888' } };
+        dataRow.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+        });
+      }
 
       sesiones.forEach((s, idx) => {
         const estado = asistMap[s.id];
         const cell = dataRow.getCell(idx + 2);
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        if (estado && FILL[estado]) cell.fill = FILL[estado];
+        if (!esBaja && estado && FILL[estado]) cell.fill = FILL[estado];
       });
     }
 
