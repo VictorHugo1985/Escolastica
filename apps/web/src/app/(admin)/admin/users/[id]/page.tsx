@@ -203,8 +203,7 @@ export default function UserFormPage() {
     setAddingRole(true);
     setError('');
     try {
-      await api.delete(`/users/${id}/roles/ExProbacionista`);
-      const { data } = await api.post(`/users/${id}/roles`, { rol: 'Probacionista' });
+      const { data } = await api.post(`/users/${id}/reinstate`);
       setCurrentRoles(data.roles ?? []);
       if (data.estado) setCurrentEstado(data.estado);
       setSuccess('Rol cambiado a Probacionista');

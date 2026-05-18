@@ -533,6 +533,41 @@ export class UsersService {
     return this.findOne(id);
   }
 
+  async reinstateAsProbacionista(actorId: string, id: string) {
+    const user = await this.findOne(id);
+    const currentRoles = getRoleNames(user);
+
+    if (!currentRoles.includes('ExProbacionista')) {
+      throw new BadRequestException('El usuario no tiene el rol ExProbacionista');
+    }
+
+    const exProbacionistaRol = await this.prisma.roles.findUnique({ where: { nombre: 'ExProbacionista' } });
+    const probacionistaRol   = await this.prisma.roles.findUnique({ where: { nombre: 'Probacionista' } });
+    if (!exProbacionistaRol || !probacionistaRol) {
+      throw new BadRequestException('Roles no encontrados en el sistema');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.usuario_roles.delete({
+        where: { usuario_id_rol_id: { usuario_id: id, rol_id: exProbacionistaRol.id } },
+      }),
+      this.prisma.usuario_roles.create({
+        data: { usuario_id: id, rol_id: probacionistaRol.id, asignado_por_id: actorId },
+      }),
+      this.prisma.usuarios.update({ where: { id }, data: { estado: 'Activo' } }),
+    ]);
+
+    await this.auditoria.log({
+      usuario_id: actorId,
+      accion: 'UPDATE',
+      tabla_afectada: 'usuarios',
+      valor_anterior: { id, rol: 'ExProbacionista', estado: user.estado },
+      valor_nuevo: { id, rol: 'Probacionista', estado: 'Activo' },
+    });
+
+    return this.findOne(id);
+  }
+
   async getInstructorStats(instructorId: string) {
     const clases = await this.prisma.clases.findMany({
       where: { instructor_id: instructorId },
@@ -648,7 +683,7 @@ export class UsersService {
       throw new BadRequestException('El archivo CSV debe contener las columnas: nombre_completo, email');
     }
 
-    const resultado: ImportResultDto = { total: rows.length, creados: 0, duplicados: 0, errores: 0, filas_fallidas: [] };
+    const resultado: ImportResultDto = { total: rows.length, creados: 0, duplicados: 0, descartados: 0, errores: 0, filas_fallidas: [] };
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];

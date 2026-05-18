@@ -192,6 +192,15 @@ export class UsersController {
     return this.usersService.markAsExProbacionista(req.user.id, id, body.comentario);
   }
 
+  @Post(':id/reinstate')
+  @Roles(Rol.Escolastico)
+  @ApiOperation({ summary: 'Reinstaurar ExProbacionista → Probacionista (swap atómico)' })
+  @ApiResponse({ status: 200, description: 'Usuario reinstaurado como Probacionista' })
+  @ApiResponse({ status: 400, description: 'Usuario no es ExProbacionista o rol no existe' })
+  reinstate(@Request() req, @Param('id') id: string) {
+    return this.usersService.reinstateAsProbacionista(req.user.id, id);
+  }
+
   @Patch(':id/interview')
   @Roles(Rol.Escolastico)
   @ApiOperation({ summary: 'Registra fecha de entrevista y estado de completado (solo Bandeja de Aprobación)' })
