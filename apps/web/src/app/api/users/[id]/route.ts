@@ -44,6 +44,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         ...(data.fecha_inscripcion !== undefined && { fecha_inscripcion: data.fecha_inscripcion ? new Date(data.fecha_inscripcion) : null }),
         ...(data.fecha_recibimiento && { fecha_recibimiento: new Date(data.fecha_recibimiento) }),
         ...(data.estado !== undefined && { estado: data.estado as any }),
+        ...('comentarios' in data && { comentarios: data.comentarios || null }),
       },
       include: ROLES_INCLUDE,
     });

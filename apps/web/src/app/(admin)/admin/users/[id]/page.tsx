@@ -35,6 +35,7 @@ const EditUserFormSchema = z.object({
   fecha_recibimiento: z.string().optional(),
   file_actualizado:   z.boolean().optional(),
   estado:             z.enum(['Activo', 'Inactivo']).optional(),
+  comentarios:        z.string().optional(),
 });
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -97,6 +98,7 @@ export default function UserFormPage() {
       fecha_inscripcion: '',
       fecha_recibimiento: '',
       file_actualizado: false,
+      comentarios: '',
     },
   });
 
@@ -113,6 +115,7 @@ export default function UserFormPage() {
         fecha_inscripcion: data.fecha_inscripcion ? data.fecha_inscripcion.split('T')[0] : '',
         fecha_recibimiento: data.fecha_recibimiento ? data.fecha_recibimiento.split('T')[0] : '',
         file_actualizado: data.file_actualizado ?? false,
+        comentarios: data.comentarios ?? '',
       });
       setCurrentRoles(data.roles ?? []);
       setCurrentEstado(data.estado ?? 'Activo');
@@ -158,6 +161,7 @@ export default function UserFormPage() {
         payload.fecha_inscripcion = v.fecha_inscripcion || null;
         payload.fecha_recibimiento = v.fecha_recibimiento || null;
         payload.file_actualizado = !!v.file_actualizado;
+        payload.comentarios = v.comentarios || null;
         await api.patch(`/users/${id}`, payload);
         setSuccess('Perfil actualizado correctamente');
       }
@@ -391,6 +395,18 @@ export default function UserFormPage() {
                   </FormControl>
                 </Grid>
               )}
+
+              <Grid item xs={12}>
+                <TextField
+                  label="Observaciones"
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  maxRows={6}
+                  placeholder="Notas internas sobre el usuario..."
+                  {...register('comentarios')}
+                />
+              </Grid>
             </Grid>
 
             {isNew && (
