@@ -153,7 +153,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       const dataRow = sheet.addRow(rowValues);
 
       if (esBaja) {
-        dataRow.getCell(1).font = { strikethrough: true, color: { argb: 'FF888888' } };
+        dataRow.getCell(1).font = { strike: true, color: { argb: 'FF888888' } };
         dataRow.eachCell((cell) => {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
         });
