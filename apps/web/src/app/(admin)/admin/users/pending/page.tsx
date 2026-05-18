@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -14,6 +14,11 @@ import TextField from '@mui/material/TextField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Divider from '@mui/material/Divider';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Chip from '@mui/material/Chip';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PersonIcon from '@mui/icons-material/Person';
 import EventIcon from '@mui/icons-material/Event';
@@ -22,10 +27,14 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
+const DIAS_LABEL: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado' };
+
 interface InstructorReferencia {
+  id: string;
   nombre_completo: string;
   estado_inscripcion: string;
   materia: string;
+  dias_semana: number[];
 }
 
 interface Usuario {
@@ -52,6 +61,31 @@ export default function PendingUsersPage() {
   const [promoting, setPromoting] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
   const [interviews, setInterviews] = useState<Record<string, InterviewState>>({});
+  const [filtroInstructor, setFiltroInstructor] = useState('');
+  const [filtroDia, setFiltroDia] = useState<number | ''>('');
+
+  const instructoresDisponibles = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of users) {
+      const ir = u.instructor_referencia;
+      if (ir) map.set(ir.id, ir.nombre_completo);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [users]);
+
+  const diasDisponibles = useMemo(() => {
+    const set = new Set<number>();
+    for (const u of users) {
+      for (const d of u.instructor_referencia?.dias_semana ?? []) set.add(d);
+    }
+    return Array.from(set).sort();
+  }, [users]);
+
+  const usersFiltrados = useMemo(() => users.filter((u) => {
+    if (filtroInstructor && u.instructor_referencia?.id !== filtroInstructor) return false;
+    if (filtroDia !== '' && !u.instructor_referencia?.dias_semana.includes(filtroDia as number)) return false;
+    return true;
+  }), [users, filtroInstructor, filtroDia]);
 
   async function load() {
     setLoading(true);
@@ -144,14 +178,48 @@ export default function PendingUsersPage() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
-      {users.length === 0 ? (
+      {users.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          <FormControl size="small" sx={{ minWidth: 220 }}>
+            <InputLabel>Instructor</InputLabel>
+            <Select value={filtroInstructor} label="Instructor" onChange={(e) => setFiltroInstructor(e.target.value)}>
+              <MenuItem value="">Todos</MenuItem>
+              {instructoresDisponibles.map(([id, nombre]) => (
+                <MenuItem key={id} value={id}>{nombre}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Día</InputLabel>
+            <Select value={filtroDia} label="Día" onChange={(e) => setFiltroDia(e.target.value as number | '')}>
+              <MenuItem value="">Todos</MenuItem>
+              {diasDisponibles.map((d) => (
+                <MenuItem key={d} value={d}>{DIAS_LABEL[d] ?? d}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {(filtroInstructor || filtroDia !== '') && (
+            <Button size="small" variant="text" onClick={() => { setFiltroInstructor(''); setFiltroDia(''); }}>
+              Limpiar filtros
+            </Button>
+          )}
+
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+            {usersFiltrados.length} de {users.length} probacionistas
+          </Typography>
+        </Box>
+      )}
+
+      {usersFiltrados.length === 0 && !loading ? (
         <Box sx={{ textAlign: 'center', mt: 8, color: 'text.secondary' }}>
           <CheckCircleIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
           <Typography variant="h6">No hay probacionistas pendientes</Typography>
         </Box>
       ) : (
         <Grid container spacing={2}>
-          {users.map((user) => {
+          {usersFiltrados.map((user) => {
             const iv = interviews[user.id];
             return (
               <Grid item xs={12} sm={6} md={4} key={user.id}>
@@ -238,9 +306,16 @@ export default function PendingUsersPage() {
                         <Typography variant="body2" fontWeight={500}>
                           {user.instructor_referencia.nombre_completo}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" display="block">
                           {user.instructor_referencia.materia}
                         </Typography>
+                        {user.instructor_referencia.dias_semana.length > 0 && (
+                          <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                            {user.instructor_referencia.dias_semana.map((d) => (
+                              <Chip key={d} label={DIAS_LABEL[d] ?? d} size="small" variant="outlined" />
+                            ))}
+                          </Box>
+                        )}
                       </Box>
                     ) : (
                       <Typography variant="caption" color="text.disabled" sx={{ pl: 0.5 }}>

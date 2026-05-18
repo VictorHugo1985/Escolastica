@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
           where: { clase: { materia: { es_curso_probacion: true } } },
           orderBy: { fecha_inscripcion: 'desc' },
           take: 1,
-          include: { clase: { include: { materia: { select: { nombre: true } }, instructor: { select: { id: true, nombre_completo: true } } } } },
+          include: { clase: { include: { materia: { select: { nombre: true } }, instructor: { select: { id: true, nombre_completo: true } }, horarios: { select: { dia_semana: true } } } } },
         },
       },
       orderBy: { created_at: 'asc' },
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     return json(users.map((u) => {
       const insc = u.inscripciones[0] ?? null;
       const { inscripciones, ...rest } = u;
-      return { ...rest, instructor_referencia: insc ? { nombre_completo: insc.clase.instructor.nombre_completo, estado_inscripcion: insc.estado, materia: insc.clase.materia.nombre } : null };
+      return { ...rest, instructor_referencia: insc ? { id: insc.clase.instructor.id, nombre_completo: insc.clase.instructor.nombre_completo, estado_inscripcion: insc.estado, materia: insc.clase.materia.nombre, dias_semana: insc.clase.horarios.map((h) => h.dia_semana) } : null };
     }));
   } catch (e) { return handleError(e); }
 }
