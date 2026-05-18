@@ -51,6 +51,8 @@ interface Inscripcion {
   id: string;
   usuario_id: string;
   fecha_inscripcion: string;
+  fecha_baja: string | null;
+  motivo_baja: string | null;
   concluyo_temario_materia: boolean;
   notas_finales: NotaFinal[];
   estado: string;
@@ -294,7 +296,22 @@ export default function ClaseDetailPage() {
       headerName: 'Alumno',
       flex: 1.5,
       minWidth: 180,
-      valueGetter: (_, row) => (row as Inscripcion).usuario?.nombre_completo,
+      renderCell: ({ row }) => {
+        const insc = row as Inscripcion;
+        const esBaja = insc.estado === 'Baja';
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Typography variant="body2" sx={{ textDecoration: esBaja ? 'line-through' : 'none', color: esBaja ? 'text.disabled' : 'text.primary' }}>
+              {insc.usuario?.nombre_completo}
+            </Typography>
+            {esBaja && (
+              <Tooltip title={`Baja${insc.motivo_baja ? ` · ${insc.motivo_baja}` : ''}${insc.fecha_baja ? ` · ${new Date(insc.fecha_baja).toLocaleDateString('es-BO')}` : ''}`}>
+                <Chip label="Baja" size="small" color="error" variant="outlined" sx={{ height: 18, fontSize: 10 }} />
+              </Tooltip>
+            )}
+          </Box>
+        );
+      },
     },
     {
       field: 'fecha_inscripcion',
@@ -306,19 +323,33 @@ export default function ClaseDetailPage() {
       },
     },
     {
+      field: 'fecha_baja',
+      headerName: 'Fecha baja',
+      width: 120,
+      valueGetter: (_, row) => {
+        const insc = row as Inscripcion;
+        if (insc.estado !== 'Baja') return '';
+        return insc.fecha_baja ? new Date(insc.fecha_baja).toLocaleDateString('es-BO') : '';
+      },
+    },
+    {
       field: 'concluyo_temario_materia',
       headerName: 'Concluyó temario',
       width: 150,
-      renderCell: ({ row }) => (
-        <Tooltip title={(row as Inscripcion).concluyo_temario_materia ? 'Marcar como no concluido' : 'Marcar como concluido'}>
-          <Checkbox
-            checked={(row as Inscripcion).concluyo_temario_materia}
-            onChange={() => toggleConclusion(row as Inscripcion)}
-            size="small"
-            color="success"
-          />
-        </Tooltip>
-      ),
+      renderCell: ({ row }) => {
+        const insc = row as Inscripcion;
+        if (insc.estado === 'Baja') return null;
+        return (
+          <Tooltip title={insc.concluyo_temario_materia ? 'Marcar como no concluido' : 'Marcar como concluido'}>
+            <Checkbox
+              checked={insc.concluyo_temario_materia}
+              onChange={() => toggleConclusion(insc)}
+              size="small"
+              color="success"
+            />
+          </Tooltip>
+        );
+      },
     },
     {
       field: 'notas_finales',
@@ -345,15 +376,19 @@ export default function ClaseDetailPage() {
     {
       field: 'actions',
       headerName: '',
-      width: 90,
+      width: 60,
       sortable: false,
-      renderCell: ({ row }) => (
-        <Tooltip title="Dar de baja">
-          <IconButton size="small" color="warning" onClick={() => openBaja(row as Inscripcion)}>
-            <PersonOffIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      ),
+      renderCell: ({ row }) => {
+        const insc = row as Inscripcion;
+        if (insc.estado === 'Baja') return null;
+        return (
+          <Tooltip title="Dar de baja">
+            <IconButton size="small" color="warning" onClick={() => openBaja(insc)}>
+              <PersonOffIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        );
+      },
     },
   ];
 
@@ -366,6 +401,8 @@ export default function ClaseDetailPage() {
   }
 
   const inscripciones = clase.inscripciones ?? [];
+  const activos = inscripciones.filter((i) => i.estado === 'Activo').length;
+  const bajas   = inscripciones.filter((i) => i.estado === 'Baja').length;
 
   return (
     <>
@@ -460,11 +497,13 @@ export default function ClaseDetailPage() {
         />
       </Box>
 
-      {/* Inscripciones activas */}
+      {/* Inscripciones */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-        <Typography variant="subtitle1" fontWeight={600}>
-          Inscritos activos ({inscripciones.length})
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="subtitle1" fontWeight={600}>
+            Inscritos ({activos} activos{bajas > 0 ? `, ${bajas} de baja` : ''})
+          </Typography>
+        </Box>
         {clase.estado !== 'Finalizada' && (
           <Button
             variant="contained"

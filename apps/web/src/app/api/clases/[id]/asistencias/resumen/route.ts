@@ -7,7 +7,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     await requireAuth(req);
     const totalSesiones = await prisma.sesiones.count({ where: { clase_id: params.id } });
     const inscripciones = await prisma.inscripciones.findMany({
-      where: { clase_id: params.id, estado: 'Activo' },
+      where: { clase_id: params.id },
+      orderBy: [{ estado: 'asc' }, { fecha_inscripcion: 'asc' }],
       include: {
         usuario: { select: { id: true, nombre_completo: true } },
         asistencias: {
@@ -24,6 +25,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return {
         inscripcion_id: insc.id,
         usuario: insc.usuario,
+        estado_inscripcion: insc.estado,
+        fecha_baja: insc.fecha_baja,
+        motivo_baja: insc.motivo_baja,
         total_sesiones: totalSesiones,
         presentes,
         ausentes,

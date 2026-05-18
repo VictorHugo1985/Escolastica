@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -22,6 +23,8 @@ import Button from '@mui/material/Button';
 import PersonIcon from '@mui/icons-material/Person';
 import SchoolIcon from '@mui/icons-material/School';
 import ClassIcon from '@mui/icons-material/Class';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
+import EditIcon from '@mui/icons-material/Edit';
 import DownloadIcon from '@mui/icons-material/Download';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
@@ -29,7 +32,14 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
-type Modo = 'miembro' | 'instructor' | 'clase';
+type Modo = 'miembro' | 'instructor' | 'clase' | 'sin-clases';
+
+interface UsuarioSinClases {
+  id: string;
+  nombre_completo: string;
+  estado: string;
+  roles: { rol: { nombre: string } }[];
+}
 
 interface UserOption { id: string; nombre_completo: string; roles: { rol: { nombre: string } }[]; }
 interface ClaseOption { id: string; codigo: string; materia: { nombre: string }; instructor: { nombre_completo: string }; estado: string; }
@@ -42,6 +52,9 @@ interface AsistenciaMiembro {
   inscripcion_id: string;
   clase: { id: string; codigo: string; estado: string; materia: { id: string; nombre: string } };
   notas_finales: NotaFinal[];
+  estado_inscripcion: string;
+  fecha_baja: string | null;
+  motivo_baja: string | null;
   concluyo_temario: boolean;
   fecha_conclusion_temario: string | null;
   total_sesiones: number;
@@ -75,6 +88,9 @@ interface ClaseInstructorStat {
 interface AsistenciaAlumno {
   inscripcion_id: string;
   usuario: { id: string; nombre_completo: string };
+  estado_inscripcion: string;
+  fecha_baja: string | null;
+  motivo_baja: string | null;
   total_sesiones: number;
   presentes: number;
   ausentes: number;
@@ -190,6 +206,7 @@ function SesionInstructorDot({ sesion }: { sesion: SesionInstructorResumen }) {
 }
 
 export default function AdminKardexPage() {
+  const router = useRouter();
   const [modo, setModo] = useState<Modo>('miembro');
   const [usuarios, setUsuarios] = useState<UserOption[]>([]);
   const [instructores, setInstructores] = useState<UserOption[]>([]);
@@ -228,6 +245,15 @@ export default function AdminKardexPage() {
   }, []);
 
   useEffect(() => {
+    if (modo === 'sin-clases') {
+      setLoading(true);
+      setError('');
+      api.get('/users/sin-clases')
+        .then(({ data }) => setData(data))
+        .catch(() => setError('Error al cargar datos'))
+        .finally(() => setLoading(false));
+      return;
+    }
     if (!selectedId) { setData(null); return; }
     setLoading(true);
     setError('');
@@ -302,9 +328,12 @@ export default function AdminKardexPage() {
           <ToggleButton value="clase">
             <ClassIcon fontSize="small" sx={{ mr: 0.5 }} />Clase
           </ToggleButton>
+          <ToggleButton value="sin-clases">
+            <PersonOffIcon fontSize="small" sx={{ mr: 0.5 }} />Sin clases
+          </ToggleButton>
         </ToggleButtonGroup>
 
-        {modo === 'miembro' ? (
+        {modo !== 'sin-clases' && modo === 'miembro' ? (
           <Autocomplete
             options={usuarios}
             getOptionLabel={(u) => u.nombre_completo}
@@ -320,7 +349,7 @@ export default function AdminKardexPage() {
             noOptionsText="Sin resultados"
             isOptionEqualToValue={(opt, val) => opt.id === val.id}
           />
-        ) : (
+        ) : modo !== 'sin-clases' ? (
           <FormControl size="small" sx={{ minWidth: 300 }}>
             <InputLabel>{labelSelector}</InputLabel>
             <Select value={selectedId} label={labelSelector} onChange={(e) => setSelectedId(e.target.value)}>
@@ -334,9 +363,9 @@ export default function AdminKardexPage() {
               ))}
             </Select>
           </FormControl>
-        )}
+        ) : null}
 
-        {modo === 'clase' && selectedId && data && data.length > 0 && (
+        {modo === 'clase' && selectedId && data && (data as any[]).length > 0 && (
           <Button
             variant="outlined"
             size="small"
@@ -348,7 +377,7 @@ export default function AdminKardexPage() {
           </Button>
         )}
 
-        {modo !== 'miembro' && (
+        {modo !== 'miembro' && modo !== 'sin-clases' && (
           <ToggleButtonGroup
             value={soloActivas ? 'activas' : 'todas'}
             exclusive
@@ -370,12 +399,14 @@ export default function AdminKardexPage() {
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
           <CircularProgress />
         </Box>
-      ) : !selectedId ? (
+      ) : modo !== 'sin-clases' && !selectedId ? (
         <Alert severity="info">
           Seleccioná {modo === 'miembro' ? 'un miembro' : modo === 'instructor' ? 'un instructor' : 'una clase'} para ver el kardex.
         </Alert>
-      ) : !data || data.length === 0 ? (
-        <Alert severity="info">No hay datos de asistencia registrados.</Alert>
+      ) : !data || (data as any[]).length === 0 ? (
+        <Alert severity="info">
+          {modo === 'sin-clases' ? 'Todos los usuarios tienen al menos una clase activa asignada.' : 'No hay datos de asistencia registrados.'}
+        </Alert>
       ) : modo === 'instructor' && dataInstructorFiltrada?.length === 0 ? (
         <Alert severity="info">Este instructor no tiene clases activas. Cambiá el filtro a "Todas" para ver el historial completo.</Alert>
       ) : (
@@ -419,6 +450,11 @@ export default function AdminKardexPage() {
                         color={a.clase.estado === 'Activa' ? 'success' : a.clase.estado === 'Finalizada' ? 'default' : 'warning'}
                         variant="outlined"
                       />
+                      {a.estado_inscripcion === 'Baja' && (
+                        <Tooltip title={`Dado de baja${a.motivo_baja ? ` · ${a.motivo_baja}` : ''}${a.fecha_baja ? ` · ${new Date(a.fecha_baja).toLocaleDateString('es-BO')}` : ''}`}>
+                          <Chip label="Baja" size="small" color="error" variant="outlined" />
+                        </Tooltip>
+                      )}
                       <PctChip value={a.porcentaje} />
                     </Box>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
@@ -508,6 +544,45 @@ export default function AdminKardexPage() {
             </Box>
           )}
 
+          {/* ── SIN CLASES ── */}
+          {modo === 'sin-clases' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                {(data as UsuarioSinClases[]).length} usuario{(data as UsuarioSinClases[]).length !== 1 ? 's' : ''} sin clase vigente
+              </Typography>
+              {(data as UsuarioSinClases[]).map((u) => (
+                <Card key={u.id} elevation={1}>
+                  <CardContent sx={{ py: '10px !important', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <PersonOffIcon fontSize="small" color="disabled" />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body1" fontWeight={500}>{u.nombre_completo}</Typography>
+                      <Box sx={{ display: 'flex', gap: 0.5, mt: 0.25, flexWrap: 'wrap' }}>
+                        {u.roles.map((r) => (
+                          <Chip key={r.rol.nombre} label={r.rol.nombre} size="small" variant="outlined" />
+                        ))}
+                        <Chip
+                          label={u.estado}
+                          size="small"
+                          color={u.estado === 'Activo' ? 'success' : 'default'}
+                        />
+                      </Box>
+                    </Box>
+                    <Tooltip title="Editar usuario">
+                      <Button
+                        size="small"
+                        variant="text"
+                        startIcon={<EditIcon fontSize="small" />}
+                        onClick={() => router.push(`/admin/users/${u.id}`)}
+                      >
+                        Editar
+                      </Button>
+                    </Tooltip>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          )}
+
           {/* ── CLASE ── */}
           {modo === 'clase' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -517,10 +592,15 @@ export default function AdminKardexPage() {
                   <Card key={a.inscripcion_id} elevation={1}>
                     <CardContent sx={{ py: '12px !important' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <PersonIcon fontSize="small" color="action" />
-                        <Typography variant="body1" sx={{ flex: 1 }}>
+                        <PersonIcon fontSize="small" color={a.estado_inscripcion === 'Baja' ? 'disabled' : 'action'} />
+                        <Typography variant="body1" sx={{ flex: 1, textDecoration: a.estado_inscripcion === 'Baja' ? 'line-through' : 'none', color: a.estado_inscripcion === 'Baja' ? 'text.disabled' : 'text.primary' }}>
                           {a.usuario?.nombre_completo ?? '—'}
                         </Typography>
+                        {a.estado_inscripcion === 'Baja' && (
+                          <Tooltip title={`Dado de baja${a.motivo_baja ? ` · ${a.motivo_baja}` : ''}${a.fecha_baja ? ` · ${new Date(a.fecha_baja as string).toLocaleDateString('es-BO')}` : ''}`}>
+                            <Chip label="Baja" size="small" color="error" variant="outlined" sx={{ height: 20, fontSize: 10 }} />
+                          </Tooltip>
+                        )}
                         <PctChip value={a.porcentaje} />
                       </Box>
                       <BarAsistencia value={a.porcentaje} height={6} />
