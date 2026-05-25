@@ -49,12 +49,8 @@ function formatFechaCompleta(fechaStr: string): string {
   return `${DIAS_LARGO[d.getDay()]} ${d.getDate()} de ${MESES_LARGO[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
-function getFechaParaSemana(dia_semana: number): string {
-  const hoy = new Date();
-  const diff = dia_semana - hoy.getDay();
-  const fecha = new Date(hoy);
-  fecha.setDate(hoy.getDate() + diff);
-  return fecha.toISOString().split('T')[0];
+function getFechaHoy(): string {
+  return new Date().toISOString().split('T')[0];
 }
 
 const estadoColor: Record<Estado, 'success' | 'error' | 'warning'> = {
@@ -119,9 +115,7 @@ function PaseListaContent() {
     setIniciando(true);
     setError('');
     try {
-      const dia_semana = clase?.horarios?.[0]?.dia_semana;
-      const fecha = dia_semana !== undefined ? getFechaParaSemana(dia_semana) : undefined;
-      const { data } = await api.post(`/clases/${claseId}/sesiones`, fecha ? { fecha } : {});
+      const { data } = await api.post(`/clases/${claseId}/sesiones`, { fecha: getFechaHoy() });
       setSesionId(data.id);
       setSesion(data);
       setLoading(true);
@@ -199,10 +193,7 @@ function PaseListaContent() {
   }, [claseId, sesionId]);
 
   const presentes = rows.filter((r) => r.estado === 'Presente').length;
-
-  const fechaProgramada = clase?.horarios?.[0] !== undefined
-    ? formatFechaCompleta(getFechaParaSemana(clase.horarios[0].dia_semana) + 'T00:00:00')
-    : null;
+  const fechaHoy = formatFechaCompleta(getFechaHoy() + 'T00:00:00');
 
   return (
     <Box>
@@ -219,11 +210,9 @@ function PaseListaContent() {
               {clase.materia.nombre}
             </Typography>
           )}
-          {sesion && (
-            <Typography variant="caption" color="primary.main" display="block" fontWeight={500}>
-              {formatFechaCompleta(sesion.fecha)}
-            </Typography>
-          )}
+          <Typography variant="caption" color="primary.main" display="block" fontWeight={500}>
+            {fechaHoy}
+          </Typography>
         </Box>
       </Box>
 
@@ -236,9 +225,7 @@ function PaseListaContent() {
       ) : !sesionId ? (
         <Box sx={{ mt: 3 }}>
           <Alert severity="info" sx={{ mb: 3 }}>
-            {fechaProgramada
-              ? `No hay sesión registrada para el ${fechaProgramada}. Iniciá el pase de lista para comenzar.`
-              : 'No hay sesión activa. Iniciá el pase de lista para comenzar.'}
+            No hay sesión registrada para el {fechaHoy}. Iniciá el pase de lista para comenzar.
           </Alert>
           <Button
             variant="contained"

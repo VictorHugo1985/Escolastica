@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
   BadRequestException,
@@ -8,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { EmailService } from '../auth/email.service';
 import { CreateUserDto, UpdateUserDto, AddRoleDto, UpdateInterviewDto, Rol, ImportResultDto, FilaImportacionResultado } from '@escolastica/shared';
 import { parse } from 'csv-parse/sync';
@@ -30,9 +32,12 @@ function getRoleNames(user: { roles: { rol: { nombre: string } }[] }): string[] 
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly notificaciones: NotificacionesService,
     private readonly emailService: EmailService,
   ) {}
 
@@ -332,6 +337,22 @@ export class UsersService {
       valor_anterior: { id, rol: 'Probacionista' },
       valor_nuevo: { id, rol: 'Miembro' },
     });
+
+    // Fire-and-forget notification
+    const actor = await this.prisma.usuarios.findUnique({
+      where: { id: actorId },
+      select: { nombre_completo: true },
+    });
+
+    this.notificaciones
+      .registrar({
+        tipo: 'promocion_miembro',
+        actor_id: actorId,
+        usuario_afectado_id: id,
+        nombre_actor: actor?.nombre_completo ?? 'Usuario eliminado',
+        nombre_afectado: user.nombre_completo,
+      })
+      .catch((e) => this.logger.error('Error al registrar notificación de promoción', e));
 
     return this.findOne(id);
   }

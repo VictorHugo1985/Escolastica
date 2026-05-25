@@ -42,7 +42,12 @@ interface UsuarioSinClases {
 }
 
 interface UserOption { id: string; nombre_completo: string; roles: { rol: { nombre: string } }[]; }
-interface ClaseOption { id: string; codigo: string; materia: { nombre: string }; instructor: { nombre_completo: string }; estado: string; }
+interface ClaseOption { id: string; codigo: string; materia: { nombre: string }; instructor: { nombre_completo: string }; estado: string; horarios: { dia_semana: number }[]; }
+
+const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+function formatDias(horarios: { dia_semana: number }[]): string {
+  return horarios.map((h) => DIAS[h.dia_semana] ?? '').filter(Boolean).join(', ');
+}
 
 interface SesionResumen { fecha: string; estado: string; tipo?: string; tema?: string | null; temas?: string[]; }
 
@@ -298,7 +303,8 @@ export default function AdminKardexPage() {
     setSoloActivas(true);
   }
 
-  const clasesFiltradas = soloActivas ? clases.filter((c) => c.estado === 'Activa') : clases;
+  const clasesFiltradas = (soloActivas ? clases.filter((c) => c.estado === 'Activa') : clases)
+    .sort((a, b) => a.materia.nombre.localeCompare(b.materia.nombre, 'es') || a.instructor.nombre_completo.localeCompare(b.instructor.nombre_completo, 'es'));
   const dataInstructorFiltrada = data && modo === 'instructor'
     ? (soloActivas ? (data as ClaseInstructorStat[]).filter((c) => c.estado === 'Activa') : data as ClaseInstructorStat[])
     : null;
@@ -358,7 +364,7 @@ export default function AdminKardexPage() {
               ))}
               {modo === 'clase' && clasesFiltradas.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
-                  {c.materia.nombre} — {c.codigo} · {c.instructor.nombre_completo}
+                  {c.materia.nombre} — {c.instructor.nombre_completo}{c.horarios.length > 0 ? ` · ${formatDias(c.horarios)}` : ''}
                 </MenuItem>
               ))}
             </Select>

@@ -9,6 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import MenuIcon from '@mui/icons-material/Menu';
 import Sidebar from '@/components/layout/Sidebar';
+import NotificacionesButton from '@/components/layout/NotificacionesButton';
 import { useAuthStore } from '@/store/auth.store';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -40,9 +41,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="subtitle1" fontWeight={700}>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1 }}>
             Escolastica
           </Typography>
+          <NotificacionesButton />
         </Toolbar>
       </AppBar>
 

@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { BulkAsistenciaDto, UpdateAsistenciaDto } from '@escolastica/shared';
 
 @Injectable()
 export class AsistenciasService {
+  private readonly logger = new Logger(AsistenciasService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   async findBySesion(claseId: string, sesionId: string) {
@@ -54,6 +58,31 @@ export class AsistenciasService {
         }),
       ),
     );
+
+    // Fire-and-forget notification
+    const clase = await this.prisma.clases.findUnique({
+      where: { id: claseIdRow!.clase_id },
+      include: {
+        materia: { select: { nombre: true } },
+        instructor: { select: { nombre_completo: true } },
+      },
+    });
+    const actor = await this.prisma.usuarios.findUnique({
+      where: { id: actorId },
+      select: { nombre_completo: true },
+    });
+    const totalPresentes = Array.from(payloadMap.values()).filter((e) => e === 'Presente').length;
+
+    this.notificaciones
+      .registrar({
+        tipo: 'pase_de_lista',
+        actor_id: actorId,
+        clase_id: claseIdRow!.clase_id,
+        nombre_clase: clase ? `${clase.materia.nombre} (${clase.codigo})` : 'Clase desconocida',
+        nombre_actor: actor?.nombre_completo ?? 'Usuario eliminado',
+        total_presentes: totalPresentes,
+      })
+      .catch((e) => this.logger.error('Error al registrar notificación de pase de lista', e));
   }
 
   async updateOne(actorId: string, asistenciaId: string, dto: UpdateAsistenciaDto) {

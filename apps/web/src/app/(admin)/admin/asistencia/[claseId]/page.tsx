@@ -55,12 +55,8 @@ function formatFechaCompleta(fechaStr: string): string {
   return `${DIAS_LARGO[d.getDay()]} ${d.getDate()} de ${MESES_LARGO[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
-function getFechaParaSemana(dia_semana: number): string {
-  const hoy = new Date();
-  const diff = dia_semana - hoy.getDay();
-  const fecha = new Date(hoy);
-  fecha.setDate(hoy.getDate() + diff);
-  return fecha.toISOString().split('T')[0];
+function getFechaHoy(): string {
+  return new Date().toISOString().split('T')[0];
 }
 
 function esSesionHoy(fechaStr: string): boolean {
@@ -103,9 +99,7 @@ export default function SesionesHubPage() {
     setIniciando(true);
     setError('');
     try {
-      const dia_semana = clase?.horarios?.[0]?.dia_semana;
-      const fecha = dia_semana !== undefined ? getFechaParaSemana(dia_semana) : undefined;
-      const { data } = await api.post(`/clases/${claseId}/sesiones`, fecha ? { fecha } : {});
+      const { data } = await api.post(`/clases/${claseId}/sesiones`, { fecha: getFechaHoy() });
       router.push(`/admin/asistencia/${claseId}/sesiones/${data.id}`);
     } catch {
       setError('Error al crear la sesión');

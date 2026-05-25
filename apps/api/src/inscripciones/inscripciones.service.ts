@@ -1,18 +1,23 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import type { BajaInscripcionDto, ConclusionInscripcionDto } from '@escolastica/shared';
 
 @Injectable()
 export class InscripcionesService {
+  private readonly logger = new Logger(InscripcionesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   async findOne(id: string) {
@@ -80,6 +85,25 @@ export class InscripcionesService {
       valor_anterior: { id: inscripcionId, estado: before.estado },
       valor_nuevo: { id: inscripcionId, estado: 'Baja', motivo: dto.motivo_baja },
     });
+
+    // Fire-and-forget notification
+    const actor = await this.prisma.usuarios.findUnique({
+      where: { id: actorId },
+      select: { nombre_completo: true },
+    });
+    const nombreClase = `${before.clase.materia.nombre} (${before.clase.codigo})`;
+
+    this.notificaciones
+      .registrar({
+        tipo: 'baja_inscrito',
+        actor_id: actorId,
+        clase_id: before.clase_id,
+        usuario_afectado_id: before.usuario_id,
+        nombre_clase: nombreClase,
+        nombre_actor: actor?.nombre_completo ?? 'Usuario eliminado',
+        nombre_afectado: before.usuario.nombre_completo,
+      })
+      .catch((e) => this.logger.error('Error al registrar notificación de baja', e));
 
     return updated;
   }

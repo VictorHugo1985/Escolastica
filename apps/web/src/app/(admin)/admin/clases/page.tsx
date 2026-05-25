@@ -262,8 +262,7 @@ export default function ClasesPage() {
   }
 
   const columns: GridColDef[] = [
-    { field: 'codigo', headerName: 'Código', width: 150 },
-    { 
+    {
       field: 'materia', 
       headerName: 'Materia', 
       flex: 1.5, 
@@ -382,8 +381,8 @@ export default function ClasesPage() {
           loading={loading}
           autoHeight
           disableRowSelectionOnClick
-          pageSizeOptions={[25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+          pageSizeOptions={[15]}
+          initialState={{ pagination: { paginationModel: { pageSize: 15 } } }}
         />
       </Box>
 

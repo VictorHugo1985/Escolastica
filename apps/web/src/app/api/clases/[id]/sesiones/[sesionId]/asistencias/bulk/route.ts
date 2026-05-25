@@ -4,7 +4,7 @@ import { requireAuth, json, handleError } from '@/lib/route';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string; sesionId: string } }) {
   try {
-    await requireAuth(req);
+    const actor = await requireAuth(req);
     const dto = await req.json();
 
     const sesion = await prisma.sesiones.findUnique({ where: { id: params.sesionId }, select: { clase_id: true } });
@@ -24,6 +24,25 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
         }),
       ),
     );
+
+    // Fire-and-forget: registrar notificación de pase de lista
+    (async () => {
+      try {
+        const totalPresentes = dto.asistencias.filter((a: { estado: string }) => a.estado === 'Presente').length;
+        const [actorUser, clase] = await Promise.all([
+          prisma.usuarios.findUnique({ where: { id: actor.sub }, select: { nombre_completo: true } }),
+          prisma.clases.findUnique({ where: { id: params.id }, include: { materia: { select: { nombre: true } } } }),
+        ]);
+        if (actorUser && clase) {
+          const descripcion = `${actorUser.nombre_completo} pasó lista en ${clase.materia.nombre}: ${totalPresentes} asistentes`;
+          await prisma.notificaciones_actividad.create({
+            data: { tipo: 'pase_de_lista', descripcion, actor_id: actor.sub, clase_id: params.id },
+          });
+        }
+      } catch {
+        // Silently ignore — no afecta la respuesta al cliente
+      }
+    })();
 
     return json({ ok: true });
   } catch (e) { return handleError(e); }

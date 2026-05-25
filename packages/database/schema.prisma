@@ -95,13 +95,16 @@ model usuarios {
   updated_at            DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
 
   // Relaciones
-  roles               usuario_roles[]      @relation("UsuarioRoles")
-  roles_asignados     usuario_roles[]      @relation("AsignacionesDadas")
-  clases_inst         clases[]             @relation("InstructorClases")
-  inscripciones       inscripciones[]
-  logs_auditoria      logs_auditoria[]
-  refresh_tokens      refresh_tokens[]
-  tokens_recuperacion tokens_recuperacion[]
+  roles                        usuario_roles[]         @relation("UsuarioRoles")
+  roles_asignados              usuario_roles[]         @relation("AsignacionesDadas")
+  clases_inst                  clases[]                @relation("InstructorClases")
+  inscripciones                inscripciones[]
+  logs_auditoria               logs_auditoria[]
+  refresh_tokens               refresh_tokens[]
+  tokens_recuperacion          tokens_recuperacion[]
+  notificaciones_como_actor    notificaciones_actividad[] @relation("NotificacionActor")
+  notificaciones_como_afectado notificaciones_actividad[] @relation("NotificacionAfectado")
+  notificaciones_ultima_vista  notificaciones_ultima_vista?
 }
 
 model refresh_tokens {
@@ -206,11 +209,12 @@ model clases {
   updated_at    DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
 
   // Relaciones
-  materia       materias        @relation(fields: [materia_id], references: [id])
-  instructor    usuarios        @relation("InstructorClases", fields: [instructor_id], references: [id])
-  horarios      horarios[]
-  sesiones      sesiones[]
-  inscripciones inscripciones[]
+  materia          materias                 @relation(fields: [materia_id], references: [id])
+  instructor       usuarios                 @relation("InstructorClases", fields: [instructor_id], references: [id])
+  horarios         horarios[]
+  sesiones         sesiones[]
+  inscripciones    inscripciones[]
+  notificaciones   notificaciones_actividad[]
 }
 
 model sesiones {
@@ -342,4 +346,32 @@ model logs_auditoria {
 
   // Relaciones
   usuario usuarios? @relation(fields: [usuario_id], references: [id])
+}
+
+// --- NOTIFICACIONES DE ACTIVIDAD ---
+
+model notificaciones_actividad {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo                String   @db.VarChar(50)
+  descripcion         String   @db.Text
+  actor_id            String?  @db.Uuid
+  clase_id            String?  @db.Uuid
+  usuario_afectado_id String?  @db.Uuid
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relaciones
+  actor            usuarios? @relation("NotificacionActor", fields: [actor_id], references: [id], onDelete: SetNull)
+  clase            clases?   @relation(fields: [clase_id], references: [id], onDelete: SetNull)
+  usuario_afectado usuarios? @relation("NotificacionAfectado", fields: [usuario_afectado_id], references: [id], onDelete: SetNull)
+
+  @@index([created_at(sort: Desc)])
+  @@index([tipo])
+}
+
+model notificaciones_ultima_vista {
+  usuario_id   String   @id @db.Uuid
+  ultima_vista DateTime @default(now()) @db.Timestamptz(6)
+
+  // Relaciones
+  usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 }
