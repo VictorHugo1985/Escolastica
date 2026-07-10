@@ -22,7 +22,7 @@ import { es } from 'date-fns/locale';
 
 interface NotificacionDto {
   id: string;
-  tipo: 'pase_de_lista' | 'baja_inscrito' | 'promocion_miembro';
+  tipo: 'pase_de_lista' | 'baja_inscrito' | 'promocion_miembro' | 'clase_inactiva';
   descripcion: string;
   actor: { id: string; nombre_completo: string } | null;
   clase: { id: string; codigo: string; materia: string } | null;
@@ -30,10 +30,11 @@ interface NotificacionDto {
   created_at: string;
 }
 
-const TIPO_LABELS: Record<string, { label: string; color: 'info' | 'error' | 'success' }> = {
+const TIPO_LABELS: Record<string, { label: string; color: 'info' | 'error' | 'success' | 'warning' }> = {
   pase_de_lista: { label: 'Pase de lista', color: 'info' },
   baja_inscrito: { label: 'Baja', color: 'error' },
   promocion_miembro: { label: 'Promoción', color: 'success' },
+  clase_inactiva: { label: 'Clases inactivas', color: 'warning' },
 };
 
 function formatTime(iso: string): string {

@@ -32,12 +32,14 @@ const TIPO_OPTIONS = [
   { value: 'pase_de_lista', label: 'Pases de lista' },
   { value: 'baja_inscrito', label: 'Bajas de inscritos' },
   { value: 'promocion_miembro', label: 'Promociones a miembro' },
+  { value: 'clase_inactiva', label: 'Clases inactivas' },
 ];
 
-const TIPO_LABELS: Record<string, { label: string; color: 'info' | 'error' | 'success' }> = {
+const TIPO_LABELS: Record<string, { label: string; color: 'info' | 'error' | 'success' | 'warning' }> = {
   pase_de_lista: { label: 'Pase de lista', color: 'info' },
   baja_inscrito: { label: 'Baja', color: 'error' },
   promocion_miembro: { label: 'Promoción', color: 'success' },
+  clase_inactiva: { label: 'Clases inactivas', color: 'warning' },
 };
 
 function formatTime(iso: string): string {
@@ -70,8 +72,8 @@ const columns: GridColDef[] = [
     field: 'actor',
     headerName: 'Actor',
     width: 180,
-    valueGetter: (value: { nombre_completo: string } | null) =>
-      value?.nombre_completo ?? 'Usuario eliminado',
+    valueGetter: (value: { nombre_completo: string } | null, row: NotificacionRow) =>
+      row.tipo === 'clase_inactiva' ? 'Sistema' : value?.nombre_completo ?? 'Usuario eliminado',
   },
   {
     field: 'created_at',

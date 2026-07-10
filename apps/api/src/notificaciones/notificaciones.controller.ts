@@ -23,7 +23,7 @@ export class NotificacionesController {
   @Get('historial')
   @ApiOperation({ summary: 'Historial completo de notificaciones con filtros y paginación' })
   @ApiResponse({ status: 200, description: 'Historial paginado de notificaciones' })
-  @ApiQuery({ name: 'tipo', required: false, enum: ['pase_de_lista', 'baja_inscrito', 'promocion_miembro'] })
+  @ApiQuery({ name: 'tipo', required: false, enum: ['pase_de_lista', 'baja_inscrito', 'promocion_miembro', 'clase_inactiva'] })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   getHistorial(

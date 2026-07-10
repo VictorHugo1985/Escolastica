@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth, requireRole, json, handleError } from '@/lib/route';
+import { evaluarClasesInactivas } from '@/lib/clases-inactivas';
 
 function toDto(n: {
   id: string;
@@ -26,6 +27,8 @@ export async function GET(req: NextRequest) {
   try {
     const actor = await requireAuth(req);
     requireRole(actor, 'Escolastico', 'Instructor');
+
+    await evaluarClasesInactivas();
 
     const [notificaciones, ultimaVista] = await Promise.all([
       prisma.notificaciones_actividad.findMany({

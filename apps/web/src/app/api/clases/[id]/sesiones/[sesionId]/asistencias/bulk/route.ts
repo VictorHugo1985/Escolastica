@@ -35,9 +35,28 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
         ]);
         if (actorUser && clase) {
           const descripcion = `${actorUser.nombre_completo} pasó lista en ${clase.materia.nombre}: ${totalPresentes} asistentes`;
-          await prisma.notificaciones_actividad.create({
-            data: { tipo: 'pase_de_lista', descripcion, actor_id: actor.sub, clase_id: params.id },
+          // Un pase de lista repetido (mismo día, mismo actor, misma clase) actualiza
+          // la notificación existente en vez de acumular una alerta por cada guardado
+          const inicioDia = new Date();
+          inicioDia.setHours(0, 0, 0, 0);
+          const existente = await prisma.notificaciones_actividad.findFirst({
+            where: {
+              tipo: 'pase_de_lista',
+              actor_id: actor.sub,
+              clase_id: params.id,
+              created_at: { gte: inicioDia },
+            },
           });
+          if (existente) {
+            await prisma.notificaciones_actividad.update({
+              where: { id: existente.id },
+              data: { descripcion, created_at: new Date() },
+            });
+          } else {
+            await prisma.notificaciones_actividad.create({
+              data: { tipo: 'pase_de_lista', descripcion, actor_id: actor.sub, clase_id: params.id },
+            });
+          }
         }
       } catch {
         // Silently ignore — no afecta la respuesta al cliente

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit')) || 20));
     const skip = (page - 1) * limit;
 
-    const validTipos = ['pase_de_lista', 'baja_inscrito', 'promocion_miembro'];
+    const validTipos = ['pase_de_lista', 'baja_inscrito', 'promocion_miembro', 'clase_inactiva'];
     const where = tipo && validTipos.includes(tipo) ? { tipo } : {};
 
     const [notificaciones, total] = await Promise.all([

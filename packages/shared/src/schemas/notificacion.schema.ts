@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-export const TipoNotificacion = z.enum(['pase_de_lista', 'baja_inscrito', 'promocion_miembro']);
+export const TipoNotificacion = z.enum([
+  'pase_de_lista',
+  'baja_inscrito',
+  'promocion_miembro',
+  'clase_inactiva',
+]);
 export type TipoNotificacion = z.infer<typeof TipoNotificacion>;
 
 // Internal payloads used by NotificacionesService.registrar()
@@ -31,10 +36,21 @@ export interface PromocionMiembroPayload {
   nombre_afectado: string;
 }
 
+// Generada por el sistema (sin actor humano); agrega todas las clases inactivas
+export interface ClaseInactivaPayload {
+  tipo: 'clase_inactiva';
+  actor_id: null;
+  clases: Array<{
+    nombre_clase: string;
+    dias_inactiva: number;
+  }>;
+}
+
 export type NotificacionPayload =
   | PaseDeListaPayload
   | BajaInscritoPayload
-  | PromocionMiembroPayload;
+  | PromocionMiembroPayload
+  | ClaseInactivaPayload;
 
 // Response shape for GET /notificaciones and GET /notificaciones/historial
 export interface NotificacionDto {
