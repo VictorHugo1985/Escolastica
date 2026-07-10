@@ -20,6 +20,14 @@ export class NotificacionesController {
     return this.notificacionesService.getRecientes(req.user.id);
   }
 
+  @Get('clases-inactivas')
+  @ApiOperation({ summary: 'Clases activas con 15+ días sin sesiones registradas' })
+  @ApiResponse({ status: 200, description: 'Lista vigente de clases inactivas (evalúa y registra la alerta del día)' })
+  async getClasesInactivas() {
+    const clases = await this.notificacionesService.evaluarClasesInactivas();
+    return { clases };
+  }
+
   @Get('historial')
   @ApiOperation({ summary: 'Historial completo de notificaciones con filtros y paginación' })
   @ApiResponse({ status: 200, description: 'Historial paginado de notificaciones' })

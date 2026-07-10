@@ -42,7 +42,7 @@ export interface ClaseInactivaPayload {
   actor_id: null;
   clases: Array<{
     nombre_clase: string;
-    ultima_sesion: string | null; // fecha formateada de la última sesión; null si nunca registró
+    semanas_inactiva: number; // semanas completas sin sesiones registradas
   }>;
 }
 

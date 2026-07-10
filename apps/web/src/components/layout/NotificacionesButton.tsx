@@ -15,7 +15,6 @@ import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import EventBusyIcon from '@mui/icons-material/EventBusy';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { api } from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
@@ -23,7 +22,7 @@ import { es } from 'date-fns/locale';
 
 interface NotificacionDto {
   id: string;
-  tipo: 'pase_de_lista' | 'baja_inscrito' | 'promocion_miembro' | 'clase_inactiva';
+  tipo: 'pase_de_lista' | 'baja_inscrito' | 'promocion_miembro';
   descripcion: string;
   actor: { id: string; nombre_completo: string } | null;
   clase: { id: string; codigo: string; materia: string } | null;
@@ -31,11 +30,10 @@ interface NotificacionDto {
   created_at: string;
 }
 
-const TIPO_LABELS: Record<string, { label: string; color: 'info' | 'error' | 'success' | 'warning' }> = {
+const TIPO_LABELS: Record<string, { label: string; color: 'info' | 'error' | 'success' }> = {
   pase_de_lista: { label: 'Pase de lista', color: 'info' },
   baja_inscrito: { label: 'Baja', color: 'error' },
   promocion_miembro: { label: 'Promoción', color: 'success' },
-  clase_inactiva: { label: 'Clases inactivas', color: 'warning' },
 };
 
 function formatTime(iso: string): string {
@@ -123,7 +121,6 @@ export default function NotificacionesButton() {
             return (
               <ListItem key={n.id} divider sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 1.5 }}>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.5, width: '100%' }}>
-                  {n.tipo === 'clase_inactiva' && <EventBusyIcon color="warning" sx={{ fontSize: 18 }} />}
                   <Chip label={tipo.label} color={tipo.color} size="small" />
                   <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
                     {formatTime(n.created_at)}

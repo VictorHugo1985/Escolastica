@@ -1,7 +1,10 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth, requireRole, json, handleError } from '@/lib/route';
-import { evaluarClasesInactivas } from '@/lib/clases-inactivas';
+
+// clase_inactiva no aparece en el feed de actividades: tiene su propio
+// indicador en la cabecera; se conserva en el historial
+const SIN_CLASE_INACTIVA = { tipo: { not: 'clase_inactiva' } };
 
 function toDto(n: {
   id: string;
@@ -28,10 +31,9 @@ export async function GET(req: NextRequest) {
     const actor = await requireAuth(req);
     requireRole(actor, 'Escolastico', 'Instructor');
 
-    await evaluarClasesInactivas();
-
     const [notificaciones, ultimaVista] = await Promise.all([
       prisma.notificaciones_actividad.findMany({
+        where: SIN_CLASE_INACTIVA,
         orderBy: { created_at: 'desc' },
         take: 20,
         include: {
@@ -47,9 +49,9 @@ export async function GET(req: NextRequest) {
 
     const total_no_leidas = ultimaVista
       ? await prisma.notificaciones_actividad.count({
-          where: { created_at: { gt: ultimaVista.ultima_vista } },
+          where: { ...SIN_CLASE_INACTIVA, created_at: { gt: ultimaVista.ultima_vista } },
         })
-      : await prisma.notificaciones_actividad.count();
+      : await prisma.notificaciones_actividad.count({ where: SIN_CLASE_INACTIVA });
 
     return json({ notificaciones: notificaciones.map(toDto), total_no_leidas });
   } catch (e) {

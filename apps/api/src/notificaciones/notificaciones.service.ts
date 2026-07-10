@@ -11,15 +11,6 @@ import type {
 
 const DIAS_INACTIVIDAD = 15;
 
-function formatFecha(fecha: Date): string {
-  return fecha.toLocaleDateString('es-AR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-}
-
 @Injectable()
 export class NotificacionesService {
   private readonly logger = new Logger(NotificacionesService.name);
@@ -68,8 +59,9 @@ export class NotificacionesService {
   }
 
   // Detecta clases activas con 15+ días sin sesiones y mantiene una única
-  // notificación agregada por día, actualizada solo cuando cambia la lista
-  async evaluarClasesInactivas(): Promise<void> {
+  // notificación agregada por día, actualizada solo cuando cambia la lista.
+  // Devuelve la lista vigente para el indicador dedicado de la cabecera.
+  async evaluarClasesInactivas(): Promise<ClaseInactivaPayload['clases']> {
     try {
       const [clasesActivas, ultimasSesiones] = await Promise.all([
         this.prisma.clases.findMany({
@@ -91,26 +83,24 @@ export class NotificacionesService {
 
       const clasesInactivas = clasesActivas
         .map((clase) => {
-          const ultimaSesion = ultimaSesionPorClase.get(clase.id) ?? null;
-          const referencia = ultimaSesion ?? clase.fecha_inicio;
+          const referencia = ultimaSesionPorClase.get(clase.id) ?? clase.fecha_inicio;
+          const dias = Math.floor((hoyUtc - referencia.getTime()) / 86_400_000);
           return {
             nombre_clase: clase.materia.nombre,
-            ultima_sesion: ultimaSesion ? formatFecha(ultimaSesion) : null,
-            dias_inactiva: Math.floor((hoyUtc - referencia.getTime()) / 86_400_000),
+            semanas_inactiva: Math.floor(dias / 7),
+            dias_inactiva: dias,
           };
         })
         .filter((c) => c.dias_inactiva >= DIAS_INACTIVIDAD)
-        .sort((a, b) => b.dias_inactiva - a.dias_inactiva);
+        .sort((a, b) => b.dias_inactiva - a.dias_inactiva)
+        .map(({ nombre_clase, semanas_inactiva }) => ({ nombre_clase, semanas_inactiva }));
 
-      if (clasesInactivas.length === 0) return;
+      if (clasesInactivas.length === 0) return [];
 
       const descripcion = this.buildDescripcion({
         tipo: 'clase_inactiva',
         actor_id: null,
-        clases: clasesInactivas.map(({ nombre_clase, ultima_sesion }) => ({
-          nombre_clase,
-          ultima_sesion,
-        })),
+        clases: clasesInactivas,
       });
       const existente = await this.prisma.notificaciones_actividad.findFirst({
         where: { tipo: 'clase_inactiva', created_at: { gte: new Date(hoyUtc) } },
@@ -126,16 +116,22 @@ export class NotificacionesService {
           data: { descripcion, created_at: new Date() },
         });
       }
+
+      return clasesInactivas;
     } catch (error) {
       this.logger.error('Error al evaluar clases inactivas', error);
+      return [];
     }
   }
 
   async getRecientes(usuarioId: string): Promise<GetNotificacionesResponseDto> {
-    await this.evaluarClasesInactivas();
+    // clase_inactiva no aparece en el feed de actividades: tiene su propio
+    // indicador en la cabecera; se conserva en el historial
+    const sinClaseInactiva = { tipo: { not: 'clase_inactiva' } };
 
     const [notificaciones, ultimaVista] = await Promise.all([
       this.prisma.notificaciones_actividad.findMany({
+        where: sinClaseInactiva,
         orderBy: { created_at: 'desc' },
         take: 20,
         include: {
@@ -151,9 +147,9 @@ export class NotificacionesService {
 
     const total_no_leidas = ultimaVista
       ? await this.prisma.notificaciones_actividad.count({
-          where: { created_at: { gt: ultimaVista.ultima_vista } },
+          where: { ...sinClaseInactiva, created_at: { gt: ultimaVista.ultima_vista } },
         })
-      : await this.prisma.notificaciones_actividad.count();
+      : await this.prisma.notificaciones_actividad.count({ where: sinClaseInactiva });
 
     return {
       notificaciones: notificaciones.map(this.toDto),
@@ -217,10 +213,7 @@ export class NotificacionesService {
 
   private buildDescripcionClasesInactivas(payload: ClaseInactivaPayload): string {
     const n = payload.clases.length;
-    const lineas = payload.clases.map(
-      (c) =>
-        `• ${c.nombre_clase} — ${c.ultima_sesion ? `última sesión: ${c.ultima_sesion}` : 'sin sesiones registradas'}`,
-    );
+    const lineas = payload.clases.map((c) => `• ${c.nombre_clase} — ${c.semanas_inactiva} SEM`);
     return `${n} clase${n !== 1 ? 's' : ''} sin sesiones recientes:\n${lineas.join('\n')}`;
   }
 

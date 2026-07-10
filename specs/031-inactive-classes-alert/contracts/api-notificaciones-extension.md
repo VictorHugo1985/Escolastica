@@ -26,8 +26,8 @@ export interface ClaseInactivaPayload {
   tipo: 'clase_inactiva';
   actor_id: null;
   clases: Array<{
-    nombre_clase: string;          // "Filosofía I" (nombre de la materia, sin código)
-    ultima_sesion: string | null;  // "19/06/2026" o null si nunca registró sesiones
+    nombre_clase: string;      // "Filosofía I" (nombre de la materia, sin código)
+    semanas_inactiva: number;  // semanas completas sin sesiones registradas
   }>;
 }
 
@@ -38,17 +38,30 @@ export type NotificacionPayload =
   | ClaseInactivaPayload;   // ← nuevo
 ```
 
+## GET /notificaciones/clases-inactivas (nuevo)
+
+Endpoint dedicado para el indicador de la cabecera. Evalúa las clases inactivas (persistiendo/actualizando la alerta del día como efecto colateral) y devuelve la lista vigente:
+
+```json
+{
+  "clases": [
+    { "nombre_clase": "Filosofía I", "semanas_inactiva": 3 },
+    { "nombre_clase": "Retórica", "semanas_inactiva": 2 }
+  ]
+}
+```
+
+Roles: Escolástico e Instructor (igual que el resto del módulo). Lista vacía cuando no hay clases inactivas.
+
 ## GET /notificaciones
 
-Sin cambios de contrato. Efecto colateral nuevo: antes de responder, el servicio ejecuta la evaluación de clases inactivas (fire-and-forget; un fallo en la evaluación no bloquea la respuesta).
-
-Ejemplo de elemento nuevo en la respuesta:
+Sin cambios de forma, pero el feed de actividades **excluye** el tipo `clase_inactiva` (tanto de la lista como del contador de no leídas): la alerta vive en su indicador dedicado. El registro persiste en el historial:
 
 ```json
 {
   "id": "…",
   "tipo": "clase_inactiva",
-  "descripcion": "2 clases sin sesiones recientes:\n• Filosofía I — última sesión: 19/06/2026\n• Retórica — sin sesiones registradas",
+  "descripcion": "2 clases sin sesiones recientes:\n• Filosofía I — 3 SEM\n• Retórica — 2 SEM",
   "actor": null,
   "clase": null,
   "usuario_afectado": null,
@@ -56,7 +69,7 @@ Ejemplo de elemento nuevo en la respuesta:
 }
 ```
 
-`actor: null` en este tipo significa "generada por el sistema" (el frontend muestra "Sistema", no "Usuario eliminado").
+`actor: null` en este tipo significa "generada por el sistema" (el historial muestra "Sistema", no "Usuario eliminado").
 
 ## GET /notificaciones/historial
 

@@ -59,13 +59,13 @@ Como Escolástico, quiero que la alerta de clases inactivas también sea consult
 
 - **FR-001**: El sistema DEBE identificar como "clase inactiva" toda clase vigente cuya sesión registrada más reciente tenga una antigüedad de 15 días o más respecto a la fecha actual.
 - **FR-002**: El sistema DEBE incluir también como "clase inactiva" las clases vigentes que nunca han registrado sesiones y cuyo inicio (o creación) ocurrió hace 15 días o más.
-- **FR-003**: El sistema DEBE generar automáticamente una notificación que liste todas las clases inactivas detectadas, identificando cada una por el nombre de su materia, y visible en el panel de notificaciones y en el historial de actividad existentes.
+- **FR-003**: El sistema DEBE generar automáticamente una notificación que liste todas las clases inactivas detectadas, identificando cada una por el nombre de su materia. La alerta se muestra mediante un indicador propio en la cabecera (separado del panel de actividades) y queda registrada en el historial de actividad existente.
 - **FR-004**: La evaluación de clases inactivas DEBE ejecutarse automáticamente al menos una vez por día, sin intervención manual.
 - **FR-005**: Mientras exista una notificación de clases inactivas vigente para el mismo día, el sistema DEBE actualizarla (lista de clases y marca de tiempo) en lugar de crear notificaciones duplicadas.
 - **FR-006**: Cuando ninguna clase esté inactiva, el sistema NO DEBE generar una nueva notificación; las notificaciones históricas se conservan en el historial.
 - **FR-007**: La notificación de clases inactivas DEBE ser visible para los mismos roles que el resto de las notificaciones de actividad (Escolástico e Instructor), mostrando a ambos el mismo contenido.
 - **FR-008**: El historial de actividad DEBE permitir filtrar por el nuevo tipo de notificación.
-- **FR-009**: La notificación DEBE mostrar, para cada clase listada (una por línea), el nombre de la clase y la fecha de su última sesión registrada (o la indicación "sin sesiones registradas" si nunca registró). La alerta DEBE distinguirse visualmente del resto con un ícono propio.
+- **FR-009**: La alerta DEBE mostrar, para cada clase listada (una por línea), el nombre de la clase y el número entero de semanas sin sesiones registradas (formato "{Materia} — {N} SEM"). El indicador de la cabecera DEBE usar un ícono de notificación específico, separado del ícono de actividades, con contador de clases afectadas, y solo aparecer cuando exista al menos una clase inactiva.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -84,7 +84,7 @@ Como Escolástico, quiero que la alerta de clases inactivas también sea consult
 - **SC-001**: El 100% de las clases vigentes con 15 días o más sin sesiones registradas aparecen listadas en la notificación en un plazo máximo de 24 horas desde que cruzan el umbral.
 - **SC-002**: Ninguna clase no vigente ni clase con sesiones registradas en los últimos 14 días aparece en la alerta (0 falsos positivos en la evaluación diaria).
 - **SC-003**: En cualquier momento existe como máximo una notificación de clases inactivas por día en el panel, independientemente de cuántas veces se ejecute la evaluación.
-- **SC-004**: El usuario puede identificar la clase (por nombre de materia) y la fecha de la última sesión de cada elemento listado sin navegar a otra pantalla.
+- **SC-004**: El usuario puede identificar la clase (por nombre de materia) y las semanas sin sesiones de cada elemento listado sin navegar a otra pantalla.
 
 ## Assumptions
 
