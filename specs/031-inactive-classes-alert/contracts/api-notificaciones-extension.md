@@ -26,7 +26,7 @@ export interface ClaseInactivaPayload {
   tipo: 'clase_inactiva';
   actor_id: null;
   clases: Array<{
-    nombre_clase: string;      // "Filosofía I" (nombre de la materia, sin código)
+    nombre_clase: string;      // "Filosofía I (Víctor · MAR, JUE)" — materia + primer nombre del instructor + días de horario
     semanas_inactiva: number;  // semanas completas sin sesiones registradas
   }>;
 }
@@ -45,8 +45,8 @@ Endpoint dedicado para el indicador de la cabecera. Evalúa las clases inactivas
 ```json
 {
   "clases": [
-    { "nombre_clase": "Filosofía I", "semanas_inactiva": 3 },
-    { "nombre_clase": "Retórica", "semanas_inactiva": 2 }
+    { "nombre_clase": "Filosofía I (Víctor · MAR, JUE)", "semanas_inactiva": 3 },
+    { "nombre_clase": "Retórica (Ana · LUN)", "semanas_inactiva": 2 }
   ]
 }
 ```
@@ -61,7 +61,7 @@ Sin cambios de forma, pero el feed de actividades **excluye** el tipo `clase_ina
 {
   "id": "…",
   "tipo": "clase_inactiva",
-  "descripcion": "2 clases sin sesiones recientes:\n• Filosofía I — 3 SEM\n• Retórica — 2 SEM",
+  "descripcion": "2 clases sin sesiones recientes:\n• Filosofía I (Víctor · MAR, JUE) — 3 SEM\n• Retórica (Ana · LUN) — 2 SEM",
   "actor": null,
   "clase": null,
   "usuario_afectado": null,

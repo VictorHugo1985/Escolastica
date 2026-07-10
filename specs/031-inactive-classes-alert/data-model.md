@@ -22,18 +22,19 @@ Multilínea (el frontend renderiza con `white-space: pre-line`), una clase por l
 
 ```
 {N} clase{s} sin sesiones recientes:
-• {Materia} — {semanas} SEM
+• {Materia} ({PrimerNombreInstructor} · {DÍAS}) — {semanas} SEM
 ```
 
 Ejemplo:
 
 ```
 2 clases sin sesiones recientes:
-• Filosofía I — 3 SEM
-• Retórica — 2 SEM
+• Filosofía I (Víctor · MAR, JUE) — 3 SEM
+• Retórica (Ana · LUN) — 2 SEM
 ```
 
 - Las clases se ordenan de mayor a menor inactividad (las más críticas primero).
+- El contexto entre paréntesis lleva el primer nombre del instructor y los días de horario de la clase (LUN–SÁB, orden semanal); fuentes: `clases.instructor → usuarios.nombre_completo` y `horarios.dia_semana`.
 - `semanas = floor(dias / 7)` con `dias = floor((hoy − fecha_referencia) / 1 día)` en UTC; para clases sin sesiones, `fecha_referencia = fecha_inicio`.
 - La alerta se muestra en un indicador dedicado de la cabecera (con la lista estructurada) y este texto queda como registro en el historial; el feed de actividades recientes excluye el tipo `clase_inactiva`.
 

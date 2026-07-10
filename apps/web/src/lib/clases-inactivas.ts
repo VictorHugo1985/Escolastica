@@ -1,6 +1,22 @@
 import { prisma } from '@/lib/prisma';
 
 const DIAS_INACTIVIDAD = 15;
+const DIAS_SEMANA_LABEL = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+
+// "Filosofía I (Víctor · MAR, JUE)"
+function nombreClaseConContexto(clase: {
+  materia: { nombre: string };
+  instructor: { nombre_completo: string } | null;
+  horarios: { dia_semana: number }[];
+}): string {
+  const primerNombre = clase.instructor?.nombre_completo.trim().split(/\s+/)[0];
+  const dias = Array.from(new Set(clase.horarios.map((h) => h.dia_semana)))
+    .sort((a, b) => a - b)
+    .map((d) => DIAS_SEMANA_LABEL[d % 7])
+    .join(', ');
+  const contexto = [primerNombre, dias].filter(Boolean).join(' · ');
+  return contexto ? `${clase.materia.nombre} (${contexto})` : clase.materia.nombre;
+}
 
 export interface ClaseInactiva {
   nombre_clase: string;
@@ -19,6 +35,8 @@ export async function evaluarClasesInactivas(): Promise<ClaseInactiva[]> {
           id: true,
           fecha_inicio: true,
           materia: { select: { nombre: true } },
+          instructor: { select: { nombre_completo: true } },
+          horarios: { select: { dia_semana: true } },
         },
       }),
       prisma.sesiones.groupBy({ by: ['clase_id'], _max: { fecha: true } }),
@@ -33,7 +51,7 @@ export async function evaluarClasesInactivas(): Promise<ClaseInactiva[]> {
         const referencia = ultimaSesionPorClase.get(clase.id) ?? clase.fecha_inicio;
         const dias = Math.floor((hoyUtc - referencia.getTime()) / 86_400_000);
         return {
-          nombre_clase: clase.materia.nombre,
+          nombre_clase: nombreClaseConContexto(clase),
           semanas_inactiva: Math.floor(dias / 7),
           dias_inactiva: dias,
         };

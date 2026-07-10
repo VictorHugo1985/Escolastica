@@ -65,7 +65,7 @@ Como Escolástico, quiero que la alerta de clases inactivas también sea consult
 - **FR-006**: Cuando ninguna clase esté inactiva, el sistema NO DEBE generar una nueva notificación; las notificaciones históricas se conservan en el historial.
 - **FR-007**: La notificación de clases inactivas DEBE ser visible para los mismos roles que el resto de las notificaciones de actividad (Escolástico e Instructor), mostrando a ambos el mismo contenido.
 - **FR-008**: El historial de actividad DEBE permitir filtrar por el nuevo tipo de notificación.
-- **FR-009**: La alerta DEBE mostrar, para cada clase listada (una por línea), el nombre de la clase y el número entero de semanas sin sesiones registradas (formato "{Materia} — {N} SEM"). El indicador de la cabecera DEBE usar un ícono de notificación específico, separado del ícono de actividades, con contador de clases afectadas, y solo aparecer cuando exista al menos una clase inactiva.
+- **FR-009**: La alerta DEBE mostrar, para cada clase listada (una por línea), el nombre de la clase, el primer nombre de su instructor, los días de su horario (LUN, MAR, etc.) y el número entero de semanas sin sesiones registradas (formato "{Materia} ({Instructor} · {DÍAS}) — {N} SEM"). El indicador de la cabecera DEBE usar un ícono de notificación específico, separado del ícono de actividades, con contador de clases afectadas, y solo aparecer cuando exista al menos una clase inactiva.
 
 ### Key Entities *(include if feature involves data)*
 
