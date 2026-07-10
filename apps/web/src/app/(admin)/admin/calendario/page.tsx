@@ -11,6 +11,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
@@ -102,6 +104,7 @@ export default function CalendarioPage() {
   const [selected, setSelected] = useState<SelectedBlock | null>(null);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [filteredInstructorId, setFilteredInstructorId] = useState<string | null>(null);
+  const [mostrarDiasVacios, setMostrarDiasVacios] = useState(false);
 
   useEffect(() => {
     const params: Record<string, string> = { estado: 'Activa' };
@@ -147,6 +150,20 @@ export default function CalendarioPage() {
     [clases],
   );
 
+  // Days with at least one scheduled class (all clases, ignoring instructor filter
+  // so columns stay stable while filtering)
+  const diasConClase = useMemo(() => {
+    const set = new Set<number>();
+    for (const clase of clases) {
+      for (const horario of clase.horarios) {
+        if (horario.dia_semana >= 1 && horario.dia_semana <= 6) set.add(horario.dia_semana);
+      }
+    }
+    return set;
+  }, [clases]);
+
+  const visibleDias = mostrarDiasVacios ? DIAS_COLS : DIAS_COLS.filter((d) => diasConClase.has(d));
+
   const TIME_COL_W = 44;
   const DIA_FLEX:   Record<number, number> = { 1: 1, 2: 2, 3: 2, 4: 2, 5: 1, 6: 1 };
   const DIA_MIN_W:  Record<number, number> = { 1: 48, 2: 88, 3: 88, 4: 88, 5: 48, 6: 48 };
@@ -168,10 +185,22 @@ export default function CalendarioPage() {
         <Alert severity="info">No hay clases activas para mostrar.</Alert>
       ) : (
         <Box sx={{ overflowX: 'auto' }}>
+          {/* Toggle empty days */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={mostrarDiasVacios ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              onClick={() => setMostrarDiasVacios((v) => !v)}
+            >
+              {mostrarDiasVacios ? 'Ocultar días sin clases' : 'Mostrar días sin clases'}
+            </Button>
+          </Box>
+
           {/* Day headers */}
           <Box sx={{ display: 'flex', minWidth: 'fit-content' }}>
             <Box sx={{ width: TIME_COL_W, flexShrink: 0 }} />
-            {DIAS_COLS.map((dia) => (
+            {visibleDias.map((dia) => (
               <Box
                 key={dia}
                 sx={{
@@ -201,7 +230,7 @@ export default function CalendarioPage() {
             </Box>
 
             {/* Day columns */}
-            {DIAS_COLS.map((dia) => (
+            {visibleDias.map((dia) => (
               <Box
                 key={dia}
                 sx={{
