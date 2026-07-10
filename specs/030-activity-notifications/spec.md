@@ -92,7 +92,7 @@ Como administrador, quiero filtrar el historial de notificaciones por tipo de ac
 - **FR-002**: El sistema DEBE mostrar un contador numérico de notificaciones no leídas sobre el ícono de la cabecera cuando existan acciones nuevas.
 - **FR-003**: Al abrir el panel de notificaciones, el sistema DEBE listar las últimas 20 acciones realizadas, ordenadas de más reciente a más antigua.
 - **FR-004**: Cada notificación DEBE incluir: tipo de acción (con ícono o etiqueta distintiva), entidades involucradas (nombre de clase y/o nombre de miembro/instructor), nombre del usuario que realizó la acción y marca de tiempo relativa (ej. "hace 5 minutos", "hace 2 horas"). Las notificaciones son solo informativas: no son elementos clicables que naveguen a otro recurso.
-- **FR-005**: El sistema DEBE registrar automáticamente una notificación cada vez que se complete un pase de lista.
+- **FR-005**: El sistema DEBE registrar automáticamente una notificación cada vez que se complete un pase de lista. Si ya existe una notificación de pase de lista con la misma fecha (día calendario), mismo usuario actor y misma clase, el sistema DEBE actualizar esa notificación existente (descripción y marca de tiempo) en lugar de crear una nueva, de modo que múltiples actualizaciones de asistentes de una misma clase en el mismo día generen una sola alerta.
 - **FR-006**: El sistema DEBE registrar automáticamente una notificación cada vez que se dé de baja a un inscrito en una clase.
 - **FR-007**: El sistema DEBE registrar automáticamente una notificación cada vez que un probacionista sea promovido a miembro.
 - **FR-008**: El sistema DEBE marcar las notificaciones como "leídas" cuando el usuario abra el panel de notificaciones.

@@ -17,6 +17,29 @@ export class NotificacionesService {
   async registrar(payload: NotificacionPayload): Promise<void> {
     try {
       const descripcion = this.buildDescripcion(payload);
+
+      // Un pase de lista repetido (mismo día, mismo actor, misma clase) actualiza
+      // la notificación existente en vez de acumular una alerta por cada guardado
+      if (payload.tipo === 'pase_de_lista') {
+        const inicioDia = new Date();
+        inicioDia.setHours(0, 0, 0, 0);
+        const existente = await this.prisma.notificaciones_actividad.findFirst({
+          where: {
+            tipo: payload.tipo,
+            actor_id: payload.actor_id,
+            clase_id: payload.clase_id,
+            created_at: { gte: inicioDia },
+          },
+        });
+        if (existente) {
+          await this.prisma.notificaciones_actividad.update({
+            where: { id: existente.id },
+            data: { descripcion, created_at: new Date() },
+          });
+          return;
+        }
+      }
+
       await this.prisma.notificaciones_actividad.create({
         data: {
           tipo: payload.tipo,
