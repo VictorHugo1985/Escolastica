@@ -21,8 +21,7 @@ interface UsuarioCumple {
   roles: { rol: { nombre: string } }[];
 }
 
-const DIAS_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const DIAS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const MESES_LARGO = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
 function todayUTC(): Date {
@@ -40,6 +39,14 @@ function addDays(date: Date, n: number): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + n));
 }
 
+function firstOfMonth(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+function addMonths(date: Date, n: number): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + n, 1));
+}
+
 function sameUTCDay(a: Date, b: Date): boolean {
   return a.getUTCFullYear() === b.getUTCFullYear()
     && a.getUTCMonth() === b.getUTCMonth()
@@ -50,7 +57,7 @@ export default function CumpleanosPage() {
   const [usuarios, setUsuarios] = useState<UsuarioCumple[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(todayUTC()));
+  const [monthStart, setMonthStart] = useState<Date>(() => firstOfMonth(todayUTC()));
 
   const today = todayUTC();
 
@@ -61,13 +68,21 @@ export default function CumpleanosPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
-  );
+  // Grid of full weeks (Mon–Sun) covering the whole month
+  const monthDays = useMemo(() => {
+    const gridStart = getMondayOf(monthStart);
+    const nextMonth = addMonths(monthStart, 1);
+    const days: Date[] = [];
+    let d = gridStart;
+    while (d < nextMonth || days.length % 7 !== 0) {
+      days.push(d);
+      d = addDays(d, 1);
+    }
+    return days;
+  }, [monthStart]);
 
   const birthdaysByDay = useMemo(
-    () => weekDays.map((day) => {
+    () => monthDays.map((day) => {
       const m = day.getUTCMonth();
       const d = day.getUTCDate();
       return usuarios.filter((u) => {
@@ -75,30 +90,27 @@ export default function CumpleanosPage() {
         return nac.getUTCMonth() === m && nac.getUTCDate() === d;
       });
     }),
-    [weekDays, usuarios],
+    [monthDays, usuarios],
   );
 
-  function prevWeek() { setWeekStart((p) => addDays(p, -7)); }
-  function nextWeek() { setWeekStart((p) => addDays(p, 7)); }
-  function goToday() { setWeekStart(getMondayOf(todayUTC())); }
+  function prevMonth() { setMonthStart((p) => addMonths(p, -1)); }
+  function nextMonth() { setMonthStart((p) => addMonths(p, 1)); }
+  function goToday() { setMonthStart(firstOfMonth(todayUTC())); }
 
-  const weekEnd = addDays(weekStart, 6);
-  const weekLabel = weekStart.getUTCMonth() === weekEnd.getUTCMonth()
-    ? `${weekStart.getUTCDate()}–${weekEnd.getUTCDate()} ${MESES_LARGO[weekStart.getUTCMonth()]} ${weekEnd.getUTCFullYear()}`
-    : `${weekStart.getUTCDate()} ${MESES[weekStart.getUTCMonth()]} – ${weekEnd.getUTCDate()} ${MESES[weekEnd.getUTCMonth()]} ${weekEnd.getUTCFullYear()}`;
+  const monthLabel = `${MESES_LARGO[monthStart.getUTCMonth()]} ${monthStart.getUTCFullYear()}`;
 
   return (
     <>
-      <PageHeader title="Cumpleaños" subtitle="Calendario semanal" />
+      <PageHeader title="Cumpleaños" subtitle="Calendario mensual" />
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
-        <IconButton onClick={prevWeek} size="small"><ChevronLeftIcon /></IconButton>
-        <Typography variant="subtitle2" sx={{ minWidth: 240, textAlign: 'center', fontWeight: 500 }}>
-          {weekLabel}
+        <IconButton onClick={prevMonth} size="small"><ChevronLeftIcon /></IconButton>
+        <Typography variant="subtitle2" sx={{ minWidth: 180, textAlign: 'center', fontWeight: 500, textTransform: 'capitalize' }}>
+          {monthLabel}
         </Typography>
-        <IconButton onClick={nextWeek} size="small"><ChevronRightIcon /></IconButton>
+        <IconButton onClick={nextMonth} size="small"><ChevronRightIcon /></IconButton>
         <Button size="small" variant="outlined" onClick={goToday}>Hoy</Button>
       </Box>
 
@@ -114,8 +126,28 @@ export default function CumpleanosPage() {
               minWidth: 800,
             }}
           >
-            {weekDays.map((day, i) => {
+            {/* Weekday header row */}
+            {DIAS_SHORT.map((dia) => (
+              <Box
+                key={dia}
+                sx={{
+                  px: 1.5,
+                  py: 0.75,
+                  borderRadius: 2,
+                  bgcolor: 'grey.100',
+                  color: 'text.secondary',
+                  textAlign: 'center',
+                }}
+              >
+                <Typography variant="caption" fontWeight={700} sx={{ lineHeight: 1.4 }}>
+                  {dia}
+                </Typography>
+              </Box>
+            ))}
+
+            {monthDays.map((day, i) => {
               const isToday = sameUTCDay(day, today);
+              const inMonth = day.getUTCMonth() === monthStart.getUTCMonth();
               const users = birthdaysByDay[i];
               return (
                 <Box
@@ -125,30 +157,35 @@ export default function CumpleanosPage() {
                     border: '1px solid',
                     borderColor: isToday ? 'primary.main' : 'divider',
                     overflow: 'hidden',
-                    minHeight: 120,
+                    minHeight: 92,
                     bgcolor: isToday ? 'rgba(25,118,210,0.04)' : 'background.paper',
+                    opacity: inMonth ? 1 : 0.45,
                   }}
                 >
-                  {/* Day header */}
-                  <Box
-                    sx={{
-                      px: 1.5,
-                      py: 0.75,
-                      bgcolor: isToday ? 'primary.main' : 'grey.100',
-                      color: isToday ? 'white' : 'text.secondary',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <Typography variant="caption" fontWeight={700} display="block" sx={{ lineHeight: 1.4 }}>
-                      {DIAS_SHORT[day.getUTCDay()]}
-                    </Typography>
-                    <Typography variant="body2" fontWeight={isToday ? 700 : 400} sx={{ lineHeight: 1.3 }}>
-                      {day.getUTCDate()} {MESES[day.getUTCMonth()]}
+                  {/* Day number */}
+                  <Box sx={{ px: 1, pt: 0.5, textAlign: 'right' }}>
+                    <Typography
+                      variant="body2"
+                      component="span"
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        fontWeight: isToday ? 700 : 400,
+                        bgcolor: isToday ? 'primary.main' : 'transparent',
+                        color: isToday ? 'white' : 'text.secondary',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {day.getUTCDate()}
                     </Typography>
                   </Box>
 
                   {/* Birthday items */}
-                  <Box sx={{ p: 0.75, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ p: 0.75, pt: 0.25, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     {users.map((u) => {
                       const nac = new Date(u.fecha_nacimiento);
                       const edad = day.getUTCFullYear() - nac.getUTCFullYear();
