@@ -15,6 +15,7 @@ import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { api } from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
@@ -122,12 +123,13 @@ export default function NotificacionesButton() {
             return (
               <ListItem key={n.id} divider sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 1.5 }}>
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.5, width: '100%' }}>
+                  {n.tipo === 'clase_inactiva' && <EventBusyIcon color="warning" sx={{ fontSize: 18 }} />}
                   <Chip label={tipo.label} color={tipo.color} size="small" />
                   <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
                     {formatTime(n.created_at)}
                   </Typography>
                 </Box>
-                <Typography variant="body2">{n.descripcion}</Typography>
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>{n.descripcion}</Typography>
               </ListItem>
             );
           })}

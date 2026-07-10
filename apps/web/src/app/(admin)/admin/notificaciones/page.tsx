@@ -67,6 +67,11 @@ const columns: GridColDef[] = [
     headerName: 'Descripción',
     flex: 1,
     minWidth: 250,
+    renderCell: (params: GridRenderCellParams) => (
+      <Typography variant="body2" sx={{ whiteSpace: 'pre-line', py: 0.75 }}>
+        {params.value as string}
+      </Typography>
+    ),
   },
   {
     field: 'actor',
@@ -160,8 +165,9 @@ export default function NotificacionesPage() {
             columns={columns}
             hideFooter
             autoHeight
+            getRowHeight={() => 'auto'}
             disableRowSelectionOnClick
-            sx={{ mb: 1 }}
+            sx={{ mb: 1, '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' } }}
           />
           <TablePagination
             component="div"

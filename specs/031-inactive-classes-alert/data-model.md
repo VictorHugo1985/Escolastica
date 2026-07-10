@@ -18,18 +18,24 @@
 
 ### Formato de `descripcion`
 
+Multilínea (el frontend renderiza con `white-space: pre-line`), una clase por línea:
+
 ```
-{N} clase{s} sin sesiones recientes: {Materia} ({CODIGO}) — {días} días; {Materia} ({CODIGO}) — {días} días
+{N} clase{s} sin sesiones recientes:
+• {Materia} — última sesión: {dd/mm/aaaa}
+• {Materia} — sin sesiones registradas
 ```
 
 Ejemplo:
 
 ```
-2 clases sin sesiones recientes: Filosofía I (FIL-2026-01) — 21 días; Retórica (RET-2026-02) — 15 días
+2 clases sin sesiones recientes:
+• Filosofía I — última sesión: 19/06/2026
+• Retórica — sin sesiones registradas
 ```
 
-- Las clases se ordenan de mayor a menor inactividad (las más críticas primero).
-- Los días se calculan como `floor((hoy − fecha_referencia) / 1 día)` en UTC.
+- Las clases se ordenan de mayor a menor inactividad (las más críticas primero); el umbral se calcula como `floor((hoy − fecha_referencia) / 1 día)` en UTC.
+- Clases que nunca registraron sesiones muestran "sin sesiones registradas" en lugar de fecha.
 
 ## Regla de detección
 

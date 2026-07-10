@@ -26,8 +26,8 @@ export interface ClaseInactivaPayload {
   tipo: 'clase_inactiva';
   actor_id: null;
   clases: Array<{
-    nombre_clase: string;   // "Filosofía I (FIL-2026-01)"
-    dias_inactiva: number;  // días desde la última sesión o desde fecha_inicio
+    nombre_clase: string;          // "Filosofía I" (nombre de la materia, sin código)
+    ultima_sesion: string | null;  // "19/06/2026" o null si nunca registró sesiones
   }>;
 }
 
@@ -48,7 +48,7 @@ Ejemplo de elemento nuevo en la respuesta:
 {
   "id": "…",
   "tipo": "clase_inactiva",
-  "descripcion": "2 clases sin sesiones recientes: Filosofía I (FIL-2026-01) — 21 días; Retórica (RET-2026-02) — 15 días",
+  "descripcion": "2 clases sin sesiones recientes:\n• Filosofía I — última sesión: 19/06/2026\n• Retórica — sin sesiones registradas",
   "actor": null,
   "clase": null,
   "usuario_afectado": null,

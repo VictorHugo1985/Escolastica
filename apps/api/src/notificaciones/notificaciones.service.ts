@@ -11,6 +11,15 @@ import type {
 
 const DIAS_INACTIVIDAD = 15;
 
+function formatFecha(fecha: Date): string {
+  return fecha.toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 @Injectable()
 export class NotificacionesService {
   private readonly logger = new Logger(NotificacionesService.name);
@@ -67,7 +76,6 @@ export class NotificacionesService {
           where: { estado: 'Activa' },
           select: {
             id: true,
-            codigo: true,
             fecha_inicio: true,
             materia: { select: { nombre: true } },
           },
@@ -83,9 +91,11 @@ export class NotificacionesService {
 
       const clasesInactivas = clasesActivas
         .map((clase) => {
-          const referencia = ultimaSesionPorClase.get(clase.id) ?? clase.fecha_inicio;
+          const ultimaSesion = ultimaSesionPorClase.get(clase.id) ?? null;
+          const referencia = ultimaSesion ?? clase.fecha_inicio;
           return {
-            nombre_clase: `${clase.materia.nombre} (${clase.codigo})`,
+            nombre_clase: clase.materia.nombre,
+            ultima_sesion: ultimaSesion ? formatFecha(ultimaSesion) : null,
             dias_inactiva: Math.floor((hoyUtc - referencia.getTime()) / 86_400_000),
           };
         })
@@ -97,7 +107,10 @@ export class NotificacionesService {
       const descripcion = this.buildDescripcion({
         tipo: 'clase_inactiva',
         actor_id: null,
-        clases: clasesInactivas,
+        clases: clasesInactivas.map(({ nombre_clase, ultima_sesion }) => ({
+          nombre_clase,
+          ultima_sesion,
+        })),
       });
       const existente = await this.prisma.notificaciones_actividad.findFirst({
         where: { tipo: 'clase_inactiva', created_at: { gte: new Date(hoyUtc) } },
@@ -204,10 +217,11 @@ export class NotificacionesService {
 
   private buildDescripcionClasesInactivas(payload: ClaseInactivaPayload): string {
     const n = payload.clases.length;
-    const lista = payload.clases
-      .map((c) => `${c.nombre_clase} — ${c.dias_inactiva} días`)
-      .join('; ');
-    return `${n} clase${n !== 1 ? 's' : ''} sin sesiones recientes: ${lista}`;
+    const lineas = payload.clases.map(
+      (c) =>
+        `• ${c.nombre_clase} — ${c.ultima_sesion ? `última sesión: ${c.ultima_sesion}` : 'sin sesiones registradas'}`,
+    );
+    return `${n} clase${n !== 1 ? 's' : ''} sin sesiones recientes:\n${lineas.join('\n')}`;
   }
 
   private toDto(n: {
