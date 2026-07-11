@@ -11,6 +11,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PageHeader from '@/components/ui/PageHeader';
@@ -187,14 +189,11 @@ export default function CalendarioPage() {
         <Box sx={{ overflowX: 'auto' }}>
           {/* Toggle empty days */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={mostrarDiasVacios ? <VisibilityOffIcon /> : <VisibilityIcon />}
-              onClick={() => setMostrarDiasVacios((v) => !v)}
-            >
-              {mostrarDiasVacios ? 'Ocultar días sin clases' : 'Mostrar días sin clases'}
-            </Button>
+            <Tooltip title={mostrarDiasVacios ? 'Ocultar días sin clases' : 'Mostrar días sin clases'}>
+              <IconButton size="small" onClick={() => setMostrarDiasVacios((v) => !v)}>
+                {mostrarDiasVacios ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              </IconButton>
+            </Tooltip>
           </Box>
 
           {/* Day headers */}

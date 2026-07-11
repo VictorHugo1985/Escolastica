@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
     const usuarios = await prisma.usuarios.findMany({
       where: {
         AND: [
-          { NOT: { roles: { some: { rol: { nombre: { in: ['ExMiembro', 'ExProbacionista'] } } } } } },
+          { estado: 'Activo' },
+          { NOT: { roles: { some: { rol: { nombre: { in: ['ExMiembro', 'ExProbacionista', 'Probacionista'] } } } } } },
           { NOT: { inscripciones: { some: { estado: 'Activo', clase: { estado: 'Activa' } } } } },
         ],
       },
