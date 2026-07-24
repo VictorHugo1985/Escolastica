@@ -11,10 +11,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
@@ -76,6 +72,11 @@ function formatHora(timeStr: string): string {
   return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
 }
 
+function getDiaVigente(): number {
+  const jsDay = new Date().getDay(); // 0=Dom, 1=Lun, ..., 6=Sáb
+  return jsDay === 0 ? 1 : jsDay; // sin clases los domingos: se adelanta al Lunes
+}
+
 function abreviarNombre(nombre: string): string {
   const partes = nombre.trim().split(/\s+/);
   if (partes.length === 1) return partes[0];
@@ -106,7 +107,20 @@ export default function CalendarioPage() {
   const [selected, setSelected] = useState<SelectedBlock | null>(null);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [filteredInstructorId, setFilteredInstructorId] = useState<string | null>(null);
-  const [mostrarDiasVacios, setMostrarDiasVacios] = useState(false);
+  const [selectedDias, setSelectedDias] = useState<Set<number>>(() => new Set([getDiaVigente()]));
+
+  const toggleDia = (dia: number) => {
+    setSelectedDias((prev) => {
+      const next = new Set(prev);
+      if (next.has(dia)) {
+        if (next.size === 1) return prev; // al menos un día debe quedar visible
+        next.delete(dia);
+      } else {
+        next.add(dia);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const params: Record<string, string> = { estado: 'Activa' };
@@ -152,19 +166,7 @@ export default function CalendarioPage() {
     [clases],
   );
 
-  // Days with at least one scheduled class (all clases, ignoring instructor filter
-  // so columns stay stable while filtering)
-  const diasConClase = useMemo(() => {
-    const set = new Set<number>();
-    for (const clase of clases) {
-      for (const horario of clase.horarios) {
-        if (horario.dia_semana >= 1 && horario.dia_semana <= 6) set.add(horario.dia_semana);
-      }
-    }
-    return set;
-  }, [clases]);
-
-  const visibleDias = mostrarDiasVacios ? DIAS_COLS : DIAS_COLS.filter((d) => diasConClase.has(d));
+  const visibleDias = DIAS_COLS.filter((d) => selectedDias.has(d));
 
   const TIME_COL_W = 44;
   const DIA_FLEX:   Record<number, number> = { 1: 1, 2: 2, 3: 2, 4: 2, 5: 1, 6: 1 };
@@ -187,13 +189,32 @@ export default function CalendarioPage() {
         <Alert severity="info">No hay clases activas para mostrar.</Alert>
       ) : (
         <Box sx={{ overflowX: 'auto' }}>
-          {/* Toggle empty days */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
-            <Tooltip title={mostrarDiasVacios ? 'Ocultar días sin clases' : 'Mostrar días sin clases'}>
-              <IconButton size="small" onClick={() => setMostrarDiasVacios((v) => !v)}>
-                {mostrarDiasVacios ? <VisibilityOffIcon /> : <VisibilityIcon />}
-              </IconButton>
-            </Tooltip>
+          {/* Day filter */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1.5 }}>
+            {DIAS_COLS.map((dia) => {
+              const isSelected = selectedDias.has(dia);
+              return (
+                <Box
+                  key={dia}
+                  onClick={() => toggleDia(dia)}
+                  sx={{
+                    px: 1.25, py: 0.4, borderRadius: 1, cursor: 'pointer',
+                    border: '1px solid',
+                    borderColor: isSelected ? 'primary.main' : 'divider',
+                    bgcolor: isSelected ? 'primary.main' : 'transparent',
+                    transition: 'all 0.15s',
+                    '&:hover': { borderColor: 'primary.main' },
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: isSelected ? 700 : 400, color: isSelected ? 'primary.contrastText' : 'text.secondary' }}
+                  >
+                    {DIAS_LABEL[dia - 1]}
+                  </Typography>
+                </Box>
+              );
+            })}
           </Box>
 
           {/* Day headers */}
