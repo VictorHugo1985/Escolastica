@@ -113,7 +113,13 @@ export class AsistenciasService {
         asistencias: {
           select: {
             estado: true,
-            sesion: { select: { fecha: true, tipo: true, tema: { select: { titulo: true } } } },
+            sesion: {
+              select: {
+                fecha: true,
+                tipo: true,
+                temas: { select: { tema: { select: { titulo: true } } } },
+              },
+            },
           },
           orderBy: { sesion: { fecha: 'desc' } },
         },
@@ -128,7 +134,7 @@ export class AsistenciasService {
         fecha: a.sesion.fecha,
         estado: a.estado,
         tipo: a.sesion.tipo,
-        tema: a.sesion.tema?.titulo ?? null,
+        tema: a.sesion.temas.map((t) => t.tema.titulo).join(', ') || null,
       }));
       return {
         inscripcion_id: insc.id,

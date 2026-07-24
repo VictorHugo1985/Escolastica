@@ -11,7 +11,7 @@ export class SesionesService {
       where: { clase_id: claseId },
       orderBy: { fecha: 'desc' },
       include: {
-        tema: { select: { id: true, titulo: true } },
+        temas: { include: { tema: { select: { id: true, titulo: true } } } },
         _count: { select: { asistencias: { where: { estado: 'Presente' } } } },
       },
     });
@@ -19,14 +19,16 @@ export class SesionesService {
 
   async createSesion(dto: CreateSesionDto) {
     const fecha = dto.fecha ? new Date(dto.fecha) : new Date();
+    const temaIds = dto.tema_ids ?? [];
     return this.prisma.sesiones.create({
       data: {
         clase_id: dto.clase_id,
         fecha,
         tipo: dto.tipo ?? 'Clase',
-        tema_id: dto.tema_id ?? null,
         comentarios: dto.comentarios ?? null,
+        temas: temaIds.length > 0 ? { create: temaIds.map((id) => ({ tema_id: id })) } : undefined,
       },
+      include: { temas: { include: { tema: { select: { id: true, titulo: true } } } } },
     });
   }
 
@@ -56,7 +58,7 @@ export class SesionesService {
   async findOne(sesionId: string) {
     const sesion = await this.prisma.sesiones.findUnique({
       where: { id: sesionId },
-      include: { tema: { select: { id: true, titulo: true } } },
+      include: { temas: { include: { tema: { select: { id: true, titulo: true } } } } },
     });
     if (!sesion) throw new NotFoundException('Sesión no encontrada');
     return sesion;
@@ -67,10 +69,13 @@ export class SesionesService {
       where: { id: sesionId },
       data: {
         ...(dto.tipo !== undefined && { tipo: dto.tipo }),
-        ...(dto.tema_id !== undefined && { tema_id: dto.tema_id }),
+        ...(dto.tema_ids !== undefined && {
+          temas: { deleteMany: {}, create: dto.tema_ids.map((id) => ({ tema_id: id })) },
+        }),
         ...(dto.comentarios !== undefined && { comentarios: dto.comentarios }),
         ...(dto.fecha !== undefined && { fecha: new Date(dto.fecha) }),
       },
+      include: { temas: { include: { tema: { select: { id: true, titulo: true } } } } },
     });
   }
 
