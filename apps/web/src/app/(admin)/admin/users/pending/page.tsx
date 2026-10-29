@@ -19,6 +19,8 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Chip from '@mui/material/Chip';
+import InputAdornment from '@mui/material/InputAdornment';
+import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PersonIcon from '@mui/icons-material/Person';
 import EventIcon from '@mui/icons-material/Event';
@@ -26,6 +28,10 @@ import SchoolIcon from '@mui/icons-material/School';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
+
+function normalizar(s: string) {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
 
 const DIAS_LABEL: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado' };
 
@@ -63,6 +69,7 @@ export default function PendingUsersPage() {
   const [interviews, setInterviews] = useState<Record<string, InterviewState>>({});
   const [filtroInstructor, setFiltroInstructor] = useState('');
   const [filtroDia, setFiltroDia] = useState<number | ''>('');
+  const [filtroNombre, setFiltroNombre] = useState('');
 
   const instructoresDisponibles = useMemo(() => {
     const map = new Map<string, string>();
@@ -81,11 +88,15 @@ export default function PendingUsersPage() {
     return Array.from(set).sort();
   }, [users]);
 
-  const usersFiltrados = useMemo(() => users.filter((u) => {
-    if (filtroInstructor && u.instructor_referencia?.id !== filtroInstructor) return false;
-    if (filtroDia !== '' && !u.instructor_referencia?.dias_semana.includes(filtroDia as number)) return false;
-    return true;
-  }), [users, filtroInstructor, filtroDia]);
+  const usersFiltrados = useMemo(() => {
+    const q = normalizar(filtroNombre);
+    return users.filter((u) => {
+      if (q && !normalizar(u.nombre_completo).includes(q)) return false;
+      if (filtroInstructor && u.instructor_referencia?.id !== filtroInstructor) return false;
+      if (filtroDia !== '' && !u.instructor_referencia?.dias_semana.includes(filtroDia as number)) return false;
+      return true;
+    });
+  }, [users, filtroNombre, filtroInstructor, filtroDia]);
 
   async function load() {
     setLoading(true);
@@ -180,6 +191,15 @@ export default function PendingUsersPage() {
 
       {users.length > 0 && (
         <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          <TextField
+            size="small"
+            placeholder="Buscar por nombre..."
+            value={filtroNombre}
+            onChange={(e) => setFiltroNombre(e.target.value)}
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+            sx={{ width: 260 }}
+          />
+
           <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Instructor</InputLabel>
             <Select value={filtroInstructor} label="Instructor" onChange={(e) => setFiltroInstructor(e.target.value)}>
@@ -200,8 +220,8 @@ export default function PendingUsersPage() {
             </Select>
           </FormControl>
 
-          {(filtroInstructor || filtroDia !== '') && (
-            <Button size="small" variant="text" onClick={() => { setFiltroInstructor(''); setFiltroDia(''); }}>
+          {(filtroNombre || filtroInstructor || filtroDia !== '') && (
+            <Button size="small" variant="text" onClick={() => { setFiltroNombre(''); setFiltroInstructor(''); setFiltroDia(''); }}>
               Limpiar filtros
             </Button>
           )}
@@ -215,7 +235,9 @@ export default function PendingUsersPage() {
       {usersFiltrados.length === 0 && !loading ? (
         <Box sx={{ textAlign: 'center', mt: 8, color: 'text.secondary' }}>
           <CheckCircleIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
-          <Typography variant="h6">No hay probacionistas pendientes</Typography>
+          <Typography variant="h6">
+            {users.length > 0 ? 'Ningún probacionista coincide con los filtros' : 'No hay probacionistas pendientes'}
+          </Typography>
         </Box>
       ) : (
         <Grid container spacing={2}>
