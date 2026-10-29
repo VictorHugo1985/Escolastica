@@ -23,6 +23,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import ViewWeekIcon from '@mui/icons-material/ViewWeek';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
@@ -68,20 +69,25 @@ export default function ListasPage() {
   const [error, setError] = useState('');
   const [filtroInstructor, setFiltroInstructor] = useState<string>('');
   const [filtroDia, setFiltroDia] = useState<number | null>(null);
+  const [verFinalizadas, setVerFinalizadas] = useState(false);
 
   // Carga de datos (no toca el filtro de día)
   useEffect(() => {
     if (!user) return;
 
-    const params: Record<string, string> = { estado: 'Activa' };
-    if (!esEscol) params.instructor_id = user.id;
+    const base: Record<string, string> = {};
+    if (!esEscol) base.instructor_id = user.id;
 
-    const requests = [api.get('/clases', { params })];
+    // Activas + Finalizadas: en las finalizadas se puede seguir tomando lista
+    const requests = [
+      api.get('/clases', { params: { ...base, estado: 'Activa' } }),
+      api.get('/clases', { params: { ...base, estado: 'Finalizada' } }),
+    ];
     if (esEscol) requests.push(api.get('/users/eligible-instructors'));
 
     Promise.all(requests)
-      .then(([resClases, resInstructores]) => {
-        setClases(resClases.data);
+      .then(([resActivas, resFinalizadas, resInstructores]) => {
+        setClases([...resActivas.data, ...resFinalizadas.data]);
         if (resInstructores) setInstructores(resInstructores.data);
       })
       .catch(() => setError('Error al cargar las clases'))
@@ -89,11 +95,14 @@ export default function ListasPage() {
   }, [esEscol, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const clasesFiltradas = useMemo(() => {
-    let result = clases;
+    let result = clases.filter((c) => c.estado === (verFinalizadas ? 'Finalizada' : 'Activa'));
     if (filtroInstructor) result = result.filter((c) => c.instructor.id === filtroInstructor);
     if (filtroDia !== null) result = result.filter((c) => c.horarios.some((h) => h.dia_semana === filtroDia));
     return result;
-  }, [clases, filtroInstructor, filtroDia]);
+  }, [clases, filtroInstructor, filtroDia, verFinalizadas]);
+
+  const cantFinalizadas = clases.filter((c) => c.estado === 'Finalizada').length;
+  const estadoLabel = verFinalizadas ? 'finalizada' : 'activa';
 
   return (
     <>
@@ -101,7 +110,7 @@ export default function ListasPage() {
         title="Listas"
         subtitle={filtroDia !== null
           ? `${clasesFiltradas.length} clase(s) el ${DIAS_LARGO[filtroDia]}`
-          : `${clasesFiltradas.length} clase${clasesFiltradas.length !== 1 ? 's' : ''} activa${clasesFiltradas.length !== 1 ? 's' : ''}`}
+          : `${clasesFiltradas.length} clase${clasesFiltradas.length !== 1 ? 's' : ''} ${estadoLabel}${clasesFiltradas.length !== 1 ? 's' : ''}`}
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -148,6 +157,14 @@ export default function ListasPage() {
             </Tooltip>
           ))}
         </ToggleButtonGroup>
+
+        <Chip
+          icon={<TaskAltIcon />}
+          label={`Finalizadas (${cantFinalizadas})`}
+          color={verFinalizadas ? 'primary' : 'default'}
+          variant={verFinalizadas ? 'filled' : 'outlined'}
+          onClick={() => setVerFinalizadas((v) => !v)}
+        />
       </Box>
 
       {loading ? (
@@ -157,8 +174,8 @@ export default function ListasPage() {
       ) : clasesFiltradas.length === 0 ? (
         <Alert severity="info">
           {filtroInstructor
-            ? 'El instructor seleccionado no tiene clases activas.'
-            : 'No hay clases activas en el sistema.'}
+            ? `El instructor seleccionado no tiene clases ${estadoLabel}s.`
+            : `No hay clases ${estadoLabel}s en el sistema.`}
         </Alert>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: 2 }}>
@@ -179,6 +196,7 @@ export default function ListasPage() {
                         Nivel {clase.materia.nivel} · {clase.codigo}
                       </Typography>
                     </Box>
+                    {clase.estado === 'Finalizada' && <Chip size="small" label="Finalizada" />}
                   </Box>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
