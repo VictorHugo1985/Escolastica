@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -29,6 +29,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
+import ViewWeekIcon from '@mui/icons-material/ViewWeek';
 import PageHeader from '@/components/ui/PageHeader';
 import { api } from '@/lib/api';
 
@@ -42,9 +43,10 @@ interface UsuarioSinClases {
 }
 
 interface UserOption { id: string; nombre_completo: string; roles: { rol: { nombre: string } }[]; }
-interface ClaseOption { id: string; codigo: string; materia: { nombre: string }; instructor: { nombre_completo: string }; estado: string; horarios: { dia_semana: number }[]; }
+interface ClaseOption { id: string; codigo: string; materia: { id: string; nombre: string }; instructor: { id: string; nombre_completo: string }; estado: string; horarios: { dia_semana: number }[]; }
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const DIAS_LARGO = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 function formatDias(horarios: { dia_semana: number }[]): string {
   return horarios.map((h) => DIAS[h.dia_semana] ?? '').filter(Boolean).join(', ');
 }
@@ -210,6 +212,12 @@ function SesionInstructorDot({ sesion }: { sesion: SesionInstructorResumen }) {
   );
 }
 
+function uniqueBy<T extends { id: string }>(items: T[], label: (item: T) => string): T[] {
+  const map = new Map<string, T>();
+  for (const it of items) if (!map.has(it.id)) map.set(it.id, it);
+  return Array.from(map.values()).sort((a, b) => label(a).localeCompare(label(b), 'es'));
+}
+
 export default function AdminKardexPage() {
   const router = useRouter();
   const [modo, setModo] = useState<Modo>('miembro');
@@ -222,6 +230,10 @@ export default function AdminKardexPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [soloActivas, setSoloActivas] = useState(true);
+  // Filtros adicionales del modo Clase
+  const [filtroDia, setFiltroDia] = useState<number | null>(null);
+  const [filtroInstructor, setFiltroInstructor] = useState('');
+  const [filtroMateria, setFiltroMateria] = useState('');
   const [tipoNotaOpts, setTipoNotaOpts] = useState<{ codigo: string; etiqueta: string }[]>([]);
   const [exportLoading, setExportLoading] = useState(false);
 
@@ -301,10 +313,33 @@ export default function AdminKardexPage() {
     setSelectedUser(null);
     setData(null);
     setSoloActivas(true);
+    setFiltroDia(null);
+    setFiltroInstructor('');
+    setFiltroMateria('');
   }
 
-  const clasesFiltradas = (soloActivas ? clases.filter((c) => c.estado === 'Activa') : clases)
+  const clasesPorEstado = useMemo(
+    () => (soloActivas ? clases.filter((c) => c.estado === 'Activa') : clases),
+    [clases, soloActivas],
+  );
+  const clasesFiltradas = clasesPorEstado
+    .filter((c) =>
+      (filtroDia === null || c.horarios.some((h) => h.dia_semana === filtroDia)) &&
+      (!filtroInstructor || c.instructor.id === filtroInstructor) &&
+      (!filtroMateria || c.materia.id === filtroMateria))
     .sort((a, b) => a.materia.nombre.localeCompare(b.materia.nombre, 'es') || a.instructor.nombre_completo.localeCompare(b.instructor.nombre_completo, 'es'));
+
+  // Opciones de los filtros: solo instructores/materias con clases en el estado elegido
+  const opcionesInstructor = useMemo(() => uniqueBy(clasesPorEstado.map((c) => c.instructor), (i) => i.nombre_completo), [clasesPorEstado]);
+  const opcionesMateria = useMemo(() => uniqueBy(clasesPorEstado.map((c) => c.materia), (m) => m.nombre), [clasesPorEstado]);
+
+  // Si la clase seleccionada deja de cumplir los filtros, se limpia la selección
+  useEffect(() => {
+    if (modo === 'clase' && selectedId && !clasesFiltradas.some((c) => c.id === selectedId)) {
+      setSelectedId('');
+      setData(null);
+    }
+  }, [modo, selectedId, clasesFiltradas]);
   const dataInstructorFiltrada = data && modo === 'instructor'
     ? (soloActivas ? (data as ClaseInstructorStat[]).filter((c) => c.estado === 'Activa') : data as ClaseInstructorStat[])
     : null;
@@ -359,6 +394,9 @@ export default function AdminKardexPage() {
           <FormControl size="small" sx={{ minWidth: 300 }}>
             <InputLabel>{labelSelector}</InputLabel>
             <Select value={selectedId} label={labelSelector} onChange={(e) => setSelectedId(e.target.value)}>
+              {modo === 'clase' && clasesFiltradas.length === 0 && (
+                <MenuItem disabled value=""><em>Ninguna clase coincide con los filtros</em></MenuItem>
+              )}
               {modo === 'instructor' && instructores.map((i) => (
                 <MenuItem key={i.id} value={i.id}>{i.nombre_completo}</MenuItem>
               ))}
@@ -400,6 +438,61 @@ export default function AdminKardexPage() {
           </ToggleButtonGroup>
         )}
       </Box>
+
+      {/* Filtros adicionales para encontrar una clase */}
+      {modo === 'clase' && (
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mt: -1, mb: 3 }}>
+          <ToggleButtonGroup
+            exclusive
+            value={filtroDia === null ? 'all' : String(filtroDia)}
+            onChange={(_, v) => {
+              if (v === null) return;
+              setFiltroDia(v === 'all' ? null : Number(v));
+            }}
+            size="small"
+            sx={{ flexWrap: 'nowrap' }}
+          >
+            <Tooltip title="Todos los días">
+              <ToggleButton value="all" sx={{ px: 1, minWidth: 34 }}>
+                <ViewWeekIcon fontSize="small" />
+              </ToggleButton>
+            </Tooltip>
+            {[1, 2, 3, 4, 5, 6].map((d) => (
+              <Tooltip key={d} title={DIAS_LARGO[d]}>
+                <ToggleButton value={String(d)} sx={{ px: 1, minWidth: 34 }}>
+                  <Typography variant="caption" fontWeight={700} lineHeight={1}>
+                    {DIAS[d]}
+                  </Typography>
+                </ToggleButton>
+              </Tooltip>
+            ))}
+          </ToggleButtonGroup>
+
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Instructor</InputLabel>
+            <Select value={filtroInstructor} label="Instructor" onChange={(e) => setFiltroInstructor(e.target.value)}>
+              <MenuItem value=""><em>Todos los instructores</em></MenuItem>
+              {opcionesInstructor.map((i) => (
+                <MenuItem key={i.id} value={i.id}>{i.nombre_completo}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Materia</InputLabel>
+            <Select value={filtroMateria} label="Materia" onChange={(e) => setFiltroMateria(e.target.value)}>
+              <MenuItem value=""><em>Todas las materias</em></MenuItem>
+              {opcionesMateria.map((m) => (
+                <MenuItem key={m.id} value={m.id}>{m.nombre}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Typography variant="body2" color="text.secondary">
+            {clasesFiltradas.length} clase(s)
+          </Typography>
+        </Box>
+      )}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
