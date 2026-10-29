@@ -500,9 +500,15 @@ export default function AdminKardexPage() {
           {modo === 'instructor' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {(dataInstructorFiltrada ?? [])
-                .sort((a: ClaseInstructorStat, b: ClaseInstructorStat) => b.promedio_asistencia - a.promedio_asistencia)
+                .sort((a: ClaseInstructorStat, b: ClaseInstructorStat) => {
+                  // Finalizadas al final de la lista
+                  const finA = a.estado === 'Finalizada' ? 1 : 0;
+                  const finB = b.estado === 'Finalizada' ? 1 : 0;
+                  if (finA !== finB) return finA - finB;
+                  return b.promedio_asistencia - a.promedio_asistencia;
+                })
                 .map((c: ClaseInstructorStat) => (
-                  <Card key={c.id} elevation={1}>
+                  <Card key={c.id} elevation={1} sx={c.estado === 'Finalizada' ? { bgcolor: 'action.hover' } : undefined}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
                         <Box sx={{ flex: 1 }}>
@@ -510,7 +516,7 @@ export default function AdminKardexPage() {
                             {c.materia.nombre}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Nivel {c.materia.nivel} · {c.codigo} · {c.estado}
+                            Nivel {c.materia.nivel} · {c.codigo} · {c.estado === 'Finalizada' ? <strong>Finalizada</strong> : c.estado}
                           </Typography>
                         </Box>
                         <PctChip value={c.promedio_asistencia} />
