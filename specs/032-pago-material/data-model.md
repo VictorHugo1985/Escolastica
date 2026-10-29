@@ -90,7 +90,7 @@ Orden: el mismo que el pase de lista (activos primero, alfabético). Detalle de 
 
 | Acción | `tabla_afectada` | `valor_anterior` | `valor_nuevo` |
 |--------|------------------|------------------|---------------|
-| `CREATE` | `pagos_material` | — | `{ id, clase_id, inscripcion_id, fecha, monto, comentarios, tema_ids }` |
+| `INSERT` | `pagos_material` | — | `{ id, clase_id, inscripcion_id, fecha, monto, comentarios, tema_ids }` |
 | `UPDATE` | `pagos_material` | snapshot previo | snapshot nuevo |
 | `DELETE` | `pagos_material` | snapshot previo | — |
 | `UPDATE` | `material_clase` | `{ comentarios }` previo | `{ comentarios }` nuevo |

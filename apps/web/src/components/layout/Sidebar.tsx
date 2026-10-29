@@ -20,6 +20,7 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CakeIcon from '@mui/icons-material/Cake';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import TuneIcon from '@mui/icons-material/Tune';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -49,6 +50,7 @@ const navItems: NavItem[] = [
   { label: 'Aulas',      href: '/admin/aulas',          icon: <MeetingRoomIcon />,    roles: ['Escolastico'] },
   // Asistencia — Instructor + Escolástico
   { label: 'Listas',     href: '/admin/asistencia',     icon: <FactCheckIcon />,      roles: ['Instructor', 'Escolastico'] },
+  { label: 'Materiales', href: '/admin/materiales',    icon: <Inventory2Icon />,     roles: ['Instructor', 'Escolastico'] },
   { label: 'Calendario', href: '/admin/calendario',     icon: <CalendarMonthIcon />,  roles: ['Instructor', 'Escolastico'] },
   { label: 'Cumpleaños', href: '/admin/cumpleanos',     icon: <CakeIcon />,           roles: ['Instructor', 'Escolastico'] },
   { label: 'Kardex',     href: '/admin/kardex',         icon: <MenuBookIcon />,       roles: ['Escolastico'] },

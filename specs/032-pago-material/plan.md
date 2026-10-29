@@ -98,7 +98,7 @@ specs/002-diccionario-datos/data-model.md           ← modificar: documentar la
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| 3 tablas nuevas y funcionalidad fuera del alcance MVP original (Gobernanza: requiere aprobación explícita) | Registrar pagos múltiples por alumno con fecha, temas y comentario exige estructura propia | Reutilizar `sesiones`/`asistencias` mezclaría pagos con asistencia (rompe FR-013 y los % de asistencia); un JSON en una tabla existente no es consultable ni validable. **Estado: pendiente de aprobación explícita del responsable antes de implementar.** |
+| 3 tablas nuevas y funcionalidad fuera del alcance MVP original (Gobernanza: requiere aprobación explícita) | Registrar pagos múltiples por alumno con fecha, temas y comentario exige estructura propia | Reutilizar `sesiones`/`asistencias` mezclaría pagos con asistencia (rompe FR-013 y los % de asistencia); un JSON en una tabla existente no es consultable ni validable. **Estado: aprobado por VictorHugo1985 el 2026-10-29.** |
 | Extraer `ClasesVigentesList` de `/admin/asistencia` (toca código existente) | Materiales usa la misma lista y filtros | Copiar la página duplicaría ~150 líneas de carga y filtros que ya cambiaron varias veces (día, finalizadas) |
 
 ---

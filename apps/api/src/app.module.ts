@@ -11,6 +11,7 @@ import { ClasesModule } from './clases/clases.module';
 import { InscripcionesModule } from './inscripciones/inscripciones.module';
 import { SesionesModule } from './sesiones/sesiones.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
+import { MaterialesModule } from './materiales/materiales.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -26,6 +27,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     InscripcionesModule,
     SesionesModule,
     NotificacionesModule,
+    MaterialesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

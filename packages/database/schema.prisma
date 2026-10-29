@@ -105,6 +105,8 @@ model usuarios {
   notificaciones_como_actor    notificaciones_actividad[] @relation("NotificacionActor")
   notificaciones_como_afectado notificaciones_actividad[] @relation("NotificacionAfectado")
   notificaciones_ultima_vista  notificaciones_ultima_vista?
+  material_creado              material_clase[]        @relation("MaterialCreadoPor")
+  pagos_material_registrados   pagos_material[]        @relation("PagoRegistradoPor")
 }
 
 model refresh_tokens {
@@ -161,6 +163,7 @@ model temas {
   // Relaciones
   materia  materias       @relation(fields: [materia_id], references: [id])
   sesiones sesion_temas[]
+  pagos_material pago_material_temas[]
 }
 
 // --- MODELOS DE INFRAESTRUCTURA ---
@@ -215,6 +218,7 @@ model clases {
   sesiones         sesiones[]
   inscripciones    inscripciones[]
   notificaciones   notificaciones_actividad[]
+  material         material_clase?
 }
 
 model sesiones {
@@ -262,6 +266,7 @@ model inscripciones {
   asistencias    asistencias[]
   notas          notas[]
   notas_finales  notas_finales_inscripcion[]
+  pagos_material pagos_material[]
 
   @@unique([usuario_id, clase_id])
 }
@@ -374,4 +379,51 @@ model notificaciones_ultima_vista {
 
   // Relaciones
   usuario usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+}
+
+// --- MATERIAL DE CLASE (spec 032) ---
+
+// Cabecera única de material por clase; se crea con el primer pago
+model material_clase {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clase_id    String   @unique @db.Uuid
+  comentarios String?  @db.Text
+  creado_por  String?  @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  clase   clases           @relation(fields: [clase_id], references: [id])
+  creador usuarios?        @relation("MaterialCreadoPor", fields: [creado_por], references: [id], onDelete: SetNull)
+  pagos   pagos_material[]
+}
+
+// Cada pago de material de un alumno; un alumno puede tener varios
+model pagos_material {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  material_clase_id String   @db.Uuid
+  inscripcion_id    String   @db.Uuid
+  fecha             DateTime @db.Date
+  monto             Decimal  @db.Decimal(8, 1)
+  comentarios       String?  @db.Text
+  registrado_por    String?  @db.Uuid
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  // Relaciones
+  material    material_clase        @relation(fields: [material_clase_id], references: [id], onDelete: Cascade)
+  inscripcion inscripciones         @relation(fields: [inscripcion_id], references: [id])
+  registrador usuarios?             @relation("PagoRegistradoPor", fields: [registrado_por], references: [id], onDelete: SetNull)
+  temas       pago_material_temas[]
+
+  @@index([material_clase_id, inscripcion_id])
+}
+
+model pago_material_temas {
+  pago_id String         @db.Uuid
+  tema_id String         @db.Uuid
+  pago    pagos_material @relation(fields: [pago_id], references: [id], onDelete: Cascade)
+  tema    temas          @relation(fields: [tema_id], references: [id])
+
+  @@id([pago_id, tema_id])
 }

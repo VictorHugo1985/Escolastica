@@ -13,3 +13,4 @@ export * from './schemas/inscripcion.schema';
 export * from './schemas/sesion.schema';
 export * from './schemas/asistencia.schema';
 export * from './schemas/notificacion.schema';
+export * from './schemas/material.schema';

@@ -24,7 +24,14 @@ Este documento resume las entidades clave definidas en el `schema.prisma` basado
 ## 5. Auditoría Transversal
 - **`logs_auditoria`**: Registro inmutable de cambios críticos (`Json` anterior/nuevo).
 
+## 6. Material de Clase (spec 032)
+- **`material_clase`**: Cabecera única de material por clase (`clase_id` único, `comentarios`, `creado_por`). Se crea con el primer pago.
+- **`pagos_material`**: Cada pago de material de un alumno (`inscripcion_id`, `fecha`, `monto DECIMAL(8,1) >= 0`, `comentarios`, `registrado_por`). Un alumno puede tener varios pagos.
+- **`pago_material_temas`**: Temas (material) a los que corresponde cada pago (N:M con `temas`).
+- Extensión modular: no modifica tablas existentes. Detalle completo en `specs/032-pago-material/data-model.md`.
+
 ## Diagrama de Relaciones Críticas
 - `usuarios` 1:N `inscripciones` N:1 `clases` 1:N `sesiones` 1:N `asistencias`
 - `materias` 1:N `temas` 1:N `sesiones` (opcional)
 - `clases` 1:N `horarios` N:1 `aulas`
+- `clases` 1:0..1 `material_clase` 1:N `pagos_material` N:1 `inscripciones`; `pagos_material` N:M `temas` (vía `pago_material_temas`)

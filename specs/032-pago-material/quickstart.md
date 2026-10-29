@@ -34,7 +34,7 @@ Esperado: sin errores. (El repo no tiene runner de tests; las reglas de `MontoSc
 
 1. Editar el pago "saldo" de VH a `12` → VH total 22, clase 22.
 2. Eliminar el primer pago de VH y confirmar → VH total 12.
-3. Revisar `logs_auditoria`: filas `CREATE`, `UPDATE` y `DELETE` en `pagos_material` con snapshot y usuario.
+3. Revisar `logs_auditoria`: filas `INSERT`, `UPDATE` y `DELETE` en `pagos_material` con snapshot y usuario.
 
 ## Escenario 3 — Permisos y estados
 
