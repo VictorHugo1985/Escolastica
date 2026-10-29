@@ -95,6 +95,7 @@ export default function ClasesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('Activa');
+  const [selectedDias, setSelectedDias] = useState<Set<number>>(new Set()); // vacío = todos los días
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingClase, setEditingClase] = useState<Clase | null>(null);
   const [dialogHorarios, setDialogHorarios] = useState<{ id: string; dia_semana: number; hora_inicio: string; hora_fin: string; aula_id?: string }[]>([]);
@@ -143,6 +144,21 @@ export default function ClasesPage() {
   }
 
   useEffect(() => { loadData(); }, []);
+
+  const toggleDia = (dia: number) => {
+    setSelectedDias((prev) => {
+      const next = new Set(prev);
+      if (next.has(dia)) next.delete(dia);
+      else next.add(dia);
+      return next;
+    });
+  };
+
+  // Una clase coincide si alguno de sus horarios cae en un día seleccionado
+  const clasesFiltradas = clases.filter((c) =>
+    (!estadoFiltro || c.estado === estadoFiltro) &&
+    (selectedDias.size === 0 || (c.horarios ?? []).some((h) => selectedDias.has(h.dia_semana)))
+  );
 
   function handleOpenCreate() {
     setEditingClase(null);
@@ -355,7 +371,7 @@ export default function ClasesPage() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 2 }}>
         <FormControl size="small" sx={{ minWidth: 160 }}>
           <InputLabel>Estado</InputLabel>
           <Select
@@ -369,14 +385,41 @@ export default function ClasesPage() {
             <MenuItem value="">Todos</MenuItem>
           </Select>
         </FormControl>
+        {/* Filtro por día */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+          {[{ value: 0, label: 'Todos' }, ...DIAS_CORTO.slice(1).map((label, i) => ({ value: i + 1, label }))].map(({ value, label }) => {
+            const isSelected = value === 0 ? selectedDias.size === 0 : selectedDias.has(value);
+            return (
+              <Box
+                key={value}
+                onClick={() => (value === 0 ? setSelectedDias(new Set()) : toggleDia(value))}
+                sx={{
+                  px: 1.25, py: 0.4, borderRadius: 1, cursor: 'pointer',
+                  border: '1px solid',
+                  borderColor: isSelected ? 'primary.main' : 'divider',
+                  bgcolor: isSelected ? 'primary.main' : 'transparent',
+                  transition: 'all 0.15s',
+                  '&:hover': { borderColor: 'primary.main' },
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{ fontWeight: isSelected ? 700 : 400, color: isSelected ? 'primary.contrastText' : 'text.secondary' }}
+                >
+                  {label}
+                </Typography>
+              </Box>
+            );
+          })}
+        </Box>
         <Typography variant="body2" color="text.secondary">
-          {(estadoFiltro ? clases.filter((c) => c.estado === estadoFiltro) : clases).length} clase(s)
+          {clasesFiltradas.length} clase(s)
         </Typography>
       </Box>
 
       <Box sx={{ bgcolor: 'background.paper', borderRadius: 2, overflow: 'hidden' }}>
         <DataGrid
-          rows={estadoFiltro ? clases.filter((c) => c.estado === estadoFiltro) : clases}
+          rows={clasesFiltradas}
           columns={columns}
           loading={loading}
           autoHeight
