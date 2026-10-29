@@ -313,7 +313,7 @@ export default function CalendarioPage() {
                       </Typography>
                       {height >= 56 && (
                         <Typography sx={{ color: 'rgba(255,255,255,0.75)', fontSize: 10, lineHeight: 1.2, mt: '1px' }} noWrap>
-                          {abreviarNombre(clase.celador)}{horario.aula ? ` · ${horario.aula.nombre}` : ''}
+                          {abreviarNombre(clase.instructor.nombre_completo)}{horario.aula ? ` · ${horario.aula.nombre}` : ''}
                         </Typography>
                       )}
                     </Box>
