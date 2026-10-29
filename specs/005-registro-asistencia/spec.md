@@ -25,6 +25,10 @@
 - Q: ¿Dónde y cuándo se muestra la fecha/día al crear una sesión? → A: Sin paso de confirmación extra. La fecha completa y el día de la semana se muestran en el header del pase de lista una vez creada la sesión (ej. subtitle: "Lunes 24 de Abril de 2026").
 - Q: ¿Desde dónde accede el usuario a la gestión de sesiones de una clase (US4)? → A: Desde la lista de clases vigentes (`/admin/asistencia`): al seleccionar una clase se abre una pantalla dedicada de gestión de sesiones para esa clase, que muestra el historial cronológico y permite crear una nueva sesión o abrir una existente para editar asistencia y metadatos.
 
+### Session 2026-10-28 (Clases finalizadas)
+
+- Q: ¿Se pueden crear sesiones y tomar asistencia en clases con estado `Finalizada`? → A: Sí. Instructor y Escolástico pueden seguir creando sesiones y registrando/editando asistencias en clases finalizadas (p. ej. para recuperaciones o registros tardíos). En la vista **Listas** (`/admin/asistencia`) un chip **"Finalizadas"** alterna entre clases activas y finalizadas; las finalizadas se identifican con la etiqueta "Finalizada". Reemplaza la restricción anterior del edge case "Clase Finalizada".
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Registro rapido de asistencia (Priority: P1)
@@ -110,7 +114,7 @@ Como **escolástico o instructor**, quiero acceder rápidamente a la gestión de
 - **Cambio de estado posterior**: El instructor o escolástico puede corregir asistencias pasadas; el sistema registrará quién realizó el cambio para auditoría.
 - **Sin conexión a internet**: El sistema requiere una conexión activa a internet para registrar la asistencia (Operación Online Only). Si no hay conexión, el usuario recibirá un aviso de error al intentar guardar.
 - **Doble registro simultáneo**: Si el instructor y el Escolástico intentan registrar asistencia al mismo tiempo para la misma sesión, el sistema aplica el último guardado como estado vigente y deja ambas acciones en auditoría.
-- **Clase Finalizada**: Ni el instructor ni el Escolástico pueden crear nuevas sesiones para clases con estado `Finalizada`.
+- **Clase Finalizada**: El instructor y el Escolástico pueden seguir creando sesiones y registrando asistencias en clases con estado `Finalizada` (ver FR-017). Las clases con estado `Inactiva` no se listan en el pase de lista.
 
 ## Requirements *(mandatory)*
 
@@ -132,6 +136,7 @@ Como **escolástico o instructor**, quiero acceder rápidamente a la gestión de
 - **FR-014**: La vista de **"Pase de lista"** del Escolástico MUST listar todas las clases activas del sistema (no solo las propias), con acceso completo a cada una.
 - **FR-015**: El header del pase de lista MUST mostrar la fecha completa y el nombre del día de la semana de la sesión activa (ej. "Lunes 24 de Abril de 2026"), sin requerir un paso de confirmación previo a la creación.
 - **FR-016**: Al seleccionar una clase desde la lista de clases vigentes (`/admin/asistencia`), el sistema MUST presentar una pantalla de gestión de sesiones para esa clase que incluya: (a) historial cronológico de sesiones (fecha completa, día de la semana, tipo, conteo de asistentes), (b) botón para crear/abrir sesión del día, (c) acceso a cualquier sesión pasada para editar asistencias individualmente y modificar tipo, tema y comentarios.
+- **FR-017**: La vista **"Listas"** (`/admin/asistencia`) MUST ofrecer un chip **"Finalizadas (N)"** que alterne entre clases activas y finalizadas, respetando los filtros de instructor y día. Desde una clase finalizada el usuario MUST poder crear sesiones y registrar/editar asistencias con la misma interfaz que en una clase activa. El Instructor solo ve sus propias clases finalizadas; el Escolástico ve todas.
 
 ### Key Entities *(include if feature involves data)*
 
